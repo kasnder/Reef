@@ -62,8 +62,14 @@ object RoutineManager {
 
             context?.let { ctx ->
                 if (oldRoutine.isEnabled) {
-                    // Was enabled, now disabled - cancel scheduling
+                    // Was enabled, now disabled - cancel scheduling and clear limits if active
                     RoutineScheduler.cancelRoutine(ctx, routineId)
+
+                    // Check if this routine is currently active and clear its limits
+                    val activeRoutineId = RoutineLimits.getActiveRoutineId()
+                    if (activeRoutineId == routineId) {
+                        RoutineLimits.clearRoutineLimits()
+                    }
                 } else {
                     // Was disabled, now enabled - schedule it
                     RoutineScheduler.scheduleRoutine(ctx, routines[index])

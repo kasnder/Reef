@@ -23,6 +23,8 @@
     <string name="notification_permission_description">Please grant the notification permission to continue.</string>
     <string name="battery_optimization_exception">Battery Optimization Exception</string>
     <string name="battery_optimization_exception_description">Please grant the battery optimization exceptions to continue.</string>
+    <string name="exact_alarm_permission">Schedule Exact Alarms</string>
+    <string name="exact_alarm_permission_description">Allow Reef to schedule exact alarms for routines. This ensures your app blocking routines start and stop at the exact times you set.</string>
     <string name="hard_mode">Hard Mode</string>
     <string name="intermediate_mode">Intermediate Mode</string>
     <string name="east_mode">East Mode</string>
@@ -66,4 +68,5 @@
     <string name="no_routines_yet">No routines yet</string>
     <string name="create_routine_text">Create your first routine to automate app limits based on your schedule</string>
     <string name="create_routine">Create Routine</string>
+    <string name="about">About</string>
 </resources>

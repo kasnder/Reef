@@ -16,7 +16,9 @@ fun Activity.showAccessibilityDialog() {
                 startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
             }.setNegativeButton(getString(android.R.string.cancel)) { dialog, _ ->
                 dialog.dismiss()
-                finish()
+                if (!isAccessibilityServiceEnabledForBlocker()) {
+                    finish()
+                }
             }.show()
     }
 }

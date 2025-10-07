@@ -1,96 +1,121 @@
 <div align="center">
+  <img src="Reef/src/main/ic_launcher-playstore.png" width="200" />
 
-# Reef - Your Digital Sanctuary for Focus
-
-<img src="Reef/src/main/ic_launcher-playstore.png" width="90" alt="Reef Logo">
-
-**Transform your phone from a distraction machine into a productivity powerhouse.**
+  <h1>Reef</h1>
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Google Play](https://img.shields.io/badge/Google_Play-Download-green.svg)](https://play.google.com/store/apps/details?id=dev.pranav.reef)
-[![Donate](https://img.shields.io/badge/Donate-PayPal-yellow.svg)](https://paypal.me/pranavpurwar)
+[![IzzyOnDroid](https://img.shields.io/badge/IzzyOnDroid-Repo-blue.svg)](https://apt.izzysoft.de/packages/dev.pranav.reef)
+[![Translation](https://img.shields.io/badge/Weblate-Contribute-green.svg)](https://hosted.weblate.org/engage/reef/)
 
 </div>
-
----
-
-## 📸 Screenshots
 
 <div align="center">
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/01.png" width="180" alt="Home Screen"/>
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/08.png" width="180" alt="Focus Times"/>
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/09.png" width="180" alt="App Blocking"/>
-
-<br>
-
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/03.png" width="180" alt="App Usage Insights"/>
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/04.png" width="180" alt="Routines"/>
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/05.png" width="180" alt="Create Routine"/>
-
-<br>
-
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/06.png" width="180" alt="App Usage Limit"/>
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/07.png" width="180" alt="Whitelist apps"/>
+  <a href="https://apt.izzysoft.de/packages/dev.pranav.reef">
+    <img alt="Get it on IzzyOnDroid" height="80" src="https://gitlab.com/IzzyOnDroid/repo/-/raw/master/assets/IzzyOnDroid.png" />
+  </a>
 </div>
 
+Reef is an open-source Android app that helps you take control of your screen time and break free
+from phone addiction. Block distracting apps, set usage limits, and understand your digital habits
+with beautiful Material You design.
+
+**No ads • No subscriptions • No tracking • Completely free**
 
 ---
 
-## 🌊 Reclaim Your Focus
+## Screenshots
 
-Tired of constant notifications and mindless scrolling? **Reef** is the modern solution for a
-distracted world, helping you regain control and build lasting focus.
+<p align="center">
+  <img src='fastlane/metadata/android/en-US/images/phoneScreenshots/01.png' width='30%'>
+  <img src='fastlane/metadata/android/en-US/images/phoneScreenshots/02.png' width='30%'>
+  <img src='fastlane/metadata/android/en-US/images/phoneScreenshots/03.png' width='30%'>
+</p>
 
----
+<p align="center">
+  <img src='fastlane/metadata/android/en-US/images/phoneScreenshots/04.png' width='30%'>
+  <img src='fastlane/metadata/android/en-US/images/phoneScreenshots/05.png' width='30%'>
+  <img src='fastlane/metadata/android/en-US/images/phoneScreenshots/06.png' width='30%'>
+</p>
 
-## 🚀 Key Features
-
-* **Robust Blocking:** A robust blocking mechanism for pure, uninterrupted focus.
-* **Actionable Insights:** Intelligent usage statistics to help you understand and change your
-  digital habits.
-* **Routine-Based Limiting:** Schedule app limits for specific days and times (e.g., 3-5 PM on
-  Wednesdays).
-* **Privacy First:** A strict no-data-collection policy ensures your habits remain completely
-  private.
-* **Minimal Design:** A clean, intuitive UI with **Material You Expressive** integration that keeps
-  your focus on your tasks.
-* **Custom Whitelist:** Allow essential tools (like a calendar or notes app) to remain accessible
-  during focus sessions.
-* **Flexible Timers:** Customize work intervals to match your personal concentration style.
+<p align="center">
+  <img src='fastlane/metadata/android/en-US/images/phoneScreenshots/07.png' width='30%'>
+  <img src='fastlane/metadata/android/en-US/images/phoneScreenshots/08.png' width='30%'>
+  <img src='fastlane/metadata/android/en-US/images/phoneScreenshots/09.png' width='30%'>
+</p>
 
 ---
 
-## 📲 Get Started
+## Features
 
-Download Reef today and start your journey toward a more focused and productive life.
-
-[<img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Play Store" height="60">](https://play.google.com/store/apps/details?id=dev.pranav.reef)
-[<img src="https://gitlab.com/IzzyOnDroid/repo/-/raw/master/assets/IzzyOnDroid.png" alt="Get it at IzzyOnDroid" height="60">](https://apt.izzysoft.de/packages/dev.pranav.reef)
-
-
-Help us translate the app into your language!
-
-<a href="https://hosted.weblate.org/engage/reef/">
-  <img src="https://hosted.weblate.org/widget/reef/open-graph.png" height="140" alt="Translation status" />
-</a>
+- **Smart App Blocking**: Block distracting apps with robust mechanisms.
+- **Usage Statistics**: Track your screen time and see where your time actually goes with detailed
+  analytics.
+- **Focus Routines**: Schedule automatic app blocking for work hours, bedtime, or study sessions.
+- **Custom Time Limits**: Set daily limits for specific apps to control your usage.
+- **Whitelist System**: Keep essential apps accessible while blocking distractions.
+- **Material 3 Expressive Design**: Beautiful adaptive interface that matches your phone's theme.
+- **Privacy First**: All data stays on your device. No accounts, no cloud sync, zero tracking.
 
 ---
 
-## 💖 Support the Project
+## Why Reef?
 
-If Reef has helped you, consider supporting its development. Your contribution helps me continue
-building more useful and innovative features.
-
-<br>
-<img src="upi.jpeg" alt="Donate with UPI" height="200" />
-
-<br>
+Unlike other screen time apps with paywalls, subscriptions and limited features, Reef is completely
+free and open source. No premium features locked behind payments, no artificial limitations. Built
+with modern Android technologies and Material 3 Expressive design, it provides a beautiful
+experience while helping you build healthier digital habits.
 
 ---
 
-## 📄 License
+## Getting Started
 
-Reef is open source software available under the **MIT License**.
+1. Download Reef from Github Release
+   or [IzzyOnDroid](https://apt.izzysoft.de/packages/dev.pranav.reef)
+2. Grant the necessary permissions (Usage Access, Accessibility Service)
+3. Select apps you want to block or limit
+4. Set up your focus routines and time limits
+5. Start taking control of your screen time
+
+---
+
+## Help Translate
+
+Reef is available in multiple languages. Help make it accessible to more people by contributing
+translations on [Weblate](https://hosted.weblate.org/engage/reef/).
+
+---
+
+## Support Development
+
+If Reef has been helpful to you, please consider supporting its development with a small donation.
+Every contribution matters.
+
+</b>
+
+
+**Bitcoin (BTC):** `bc1qec5ccz85qn90a6zxnqnes0rx274cv6vw7j5x4g`
+
+**Ethereum (ETH):** `0xD80A8D6E0fa433A8bDFC2D3F325159Db70605816`
+
+**Solana (SOL):** `7FxTAJLmhXFp6wxVbUTpf8jDmzEX1CKVMdE8oLPNQvyb`
+
+**Litecoin (LTC):** `ltc1q3pqyj5ge5rdmqr00w03x4tlhm6rhcc6wrfyx8k`
+
+**Monero (XMR):**
+`44w9JtiXxwifyH5CU6Ln1BNViyWNz4z7pEZ4nqbCvUejiK3yEjdyAv6bAofXX2Eh6Fbe3DXJ6eCX6YWKh9SF15fyKBjeJ5H`
+
+</b>
+
+**UPI (India):** `pranavpurwar@fam`
+
+<img src="upi.jpeg" width="200" />
+
+---
+
+## License
+
+Reef is licensed under the [MIT License](LICENSE). You are free to use, modify, and distribute this
+software.
 
 ```
 MIT License
@@ -115,3 +140,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
+
+---
+
+Thank you for using Reef! Together, we can build healthier digital habits.

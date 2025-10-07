@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -24,6 +25,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -46,6 +48,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.OutlinedTextField
@@ -58,6 +61,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
 import androidx.compose.material3.ToggleButton
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -72,6 +76,8 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
@@ -609,6 +615,7 @@ fun TimePickerDialog(
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppSelectorDialog(
     onAppSelected: (packageName: String, appName: String, limitMinutes: Int) -> Unit,
@@ -618,6 +625,17 @@ fun AppSelectorDialog(
     var apps by remember { mutableStateOf<List<Pair<String, String>>>(emptyList()) }
     var selectedApp by remember { mutableStateOf<Pair<String, String>?>(null) }
     var isLoading by remember { mutableStateOf(true) }
+    var searchQuery by remember { mutableStateOf("") }
+    val sheetState = rememberModalBottomSheetState()
+
+    val filteredApps = remember(apps, searchQuery) {
+        if (searchQuery.isBlank()) apps else apps.filter {
+            it.second.contains(
+                searchQuery,
+                ignoreCase = true
+            )
+        }
+    }
 
     LaunchedEffect(Unit) {
         withContext(Dispatchers.IO) {
@@ -633,6 +651,80 @@ fun AppSelectorDialog(
         }
     }
 
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Text(
+                text = "Select App",
+                style = MaterialTheme.typography.headlineSmall,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center
+            )
+
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                label = { Text("Search apps") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                shape = RoundedCornerShape(16.dp),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Text,
+                    imeAction = ImeAction.Search
+                )
+            )
+
+            if (isLoading) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            } else if (filteredApps.isEmpty()) {
+                Text(
+                    text = if (searchQuery.isBlank()) "No apps found" else "No apps match your search",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(32.dp)
+                        .height(400.dp),
+                )
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .fillMaxHeight(0.6f)
+                ) {
+                    items(filteredApps) { (packageName, appName) ->
+                        TextButton(
+                            onClick = { selectedApp = packageName to appName },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text(
+                                text = appName,
+                                modifier = Modifier.fillMaxWidth(),
+                                textAlign = TextAlign.Start
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     if (selectedApp != null) {
         val (packageName, appName) = selectedApp!!
         AlertDialog(
@@ -641,6 +733,7 @@ fun AppSelectorDialog(
             text = {
                 Column {
                     listOf(
+                        "0 minutes" to 0,
                         "15 minutes" to 15,
                         "30 minutes" to 30,
                         "1 hour" to 60,
@@ -662,47 +755,6 @@ fun AppSelectorDialog(
             confirmButton = {},
             dismissButton = {
                 TextButton(onClick = { selectedApp = null }) {
-                    Text("Cancel")
-                }
-            }
-        )
-    } else {
-        AlertDialog(
-            onDismissRequest = onDismiss,
-            title = { Text("Select App") },
-            text = {
-                if (isLoading) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(200.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator()
-                    }
-                } else {
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(400.dp)
-                    ) {
-                        items(apps) { (packageName, appName) ->
-                            TextButton(
-                                onClick = { selectedApp = packageName to appName },
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text(
-                                    text = appName,
-                                    modifier = Modifier.fillMaxWidth()
-                                )
-                            }
-                        }
-                    }
-                }
-            },
-            confirmButton = {},
-            dismissButton = {
-                TextButton(onClick = onDismiss) {
                     Text("Cancel")
                 }
             }

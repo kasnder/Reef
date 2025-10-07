@@ -41,8 +41,53 @@ object AppLimits {
     }
 
     fun getUsageTime(packageName: String, usageStatsManager: UsageStatsManager): Long {
-        return getUsageStats(usageStatsManager).find { it.packageName == packageName }?.totalTimeInForeground
-            ?: 0L
+        val endTime = System.currentTimeMillis()
+        val startTime = ZonedDateTime.ofInstant(Instant.now(), ZoneId.systemDefault())
+            .toLocalDate()
+            .atStartOfDay(ZoneOffset.systemDefault())
+            .toInstant()
+            .toEpochMilli()
+
+        return queryAppUsageEvents(packageName, usageStatsManager, startTime, endTime)
+    }
+
+    private fun queryAppUsageEvents(
+        packageName: String,
+        usageStatsManager: UsageStatsManager,
+        start: Long,
+        end: Long
+    ): Long {
+        val events = usageStatsManager.queryEvents(start, end)
+        var totalUsage = 0L
+        var lastResumeTime: Long? = null
+        val event = android.app.usage.UsageEvents.Event()
+
+        while (events.hasNextEvent()) {
+            events.getNextEvent(event)
+            if (event.packageName == packageName) {
+                when (event.eventType) {
+                    android.app.usage.UsageEvents.Event.ACTIVITY_RESUMED -> {
+                        lastResumeTime = event.timeStamp
+                    }
+
+                    android.app.usage.UsageEvents.Event.ACTIVITY_PAUSED,
+                    android.app.usage.UsageEvents.Event.ACTIVITY_STOPPED -> {
+                        val startTime = lastResumeTime
+                        if (startTime != null) {
+                            val duration = event.timeStamp - startTime
+                            totalUsage += duration
+                            lastResumeTime = null
+                        }
+                    }
+                }
+            }
+        }
+
+        lastResumeTime?.let {
+            totalUsage += (end - it)
+        }
+
+        return totalUsage
     }
 
     fun getRawUsageStats(usageStatsManager: UsageStatsManager): List<UsageStats> {

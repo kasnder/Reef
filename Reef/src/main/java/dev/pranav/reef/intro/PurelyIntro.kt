@@ -19,6 +19,8 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
+import androidx.core.content.edit
+import androidx.core.net.toUri
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -178,19 +180,49 @@ class PurelyIntro : AppIntro2() {
                 listener = {
                     runOnUiThread {
                         startActivity(Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
-                            data = Uri.parse("package:$packageName")
+                            data = "package:$packageName".toUri()
                         })
                     }
                     createNotificationChannel()
-                    prefs.edit().putBoolean("first_run", false).apply()
+                    prefs.edit { putBoolean("first_run", false) }
                 },
                 isTaskCompleted = {
                     return@DetailsFragment (getSystemService(Context.POWER_SERVICE) as PowerManager).isIgnoringBatteryOptimizations(
                         packageName
-                    ).also { if (it) prefs.edit().putBoolean("first_run", false).apply() }
+                    ).also { if (it) prefs.edit { putBoolean("first_run", false) } }
                 }
             )
         )
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val exactAlarmResult =
+                registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+                    goToNextSlide(false)
+                }
+
+            addSlide(
+                DetailsFragment(
+                    title = getString(R.string.exact_alarm_permission),
+                    description = getString(R.string.exact_alarm_permission_description),
+                    listener = {
+                        runOnUiThread {
+                            exactAlarmResult.launch(
+                                Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
+                                    data = Uri.parse("package:$packageName")
+                                }
+                            )
+                        }
+                    },
+                    isTaskCompleted = {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                            (getSystemService(Context.ALARM_SERVICE) as android.app.AlarmManager).canScheduleExactAlarms()
+                        } else {
+                            true
+                        }
+                    }
+                )
+            )
+        }
     }
 
     override fun onSkipPressed(currentFragment: Fragment?) {
@@ -205,7 +237,7 @@ class PurelyIntro : AppIntro2() {
 
     private fun createNotificationChannel() {
         val descriptionText = "Shows reminders for screen time and when apps are blocked."
-        val importance = NotificationManager.IMPORTANCE_LOW
+        val importance = NotificationManager.IMPORTANCE_MAX
         val channel = NotificationChannel(CHANNEL_ID, "Content Blocker", importance).apply {
             description = descriptionText
         }

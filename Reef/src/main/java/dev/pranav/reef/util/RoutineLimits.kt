@@ -1,11 +1,13 @@
 package dev.pranav.reef.util
 
+import android.app.usage.UsageStatsManager
 import android.util.Log
 import androidx.core.content.edit
 
 object RoutineLimits {
     private const val ROUTINE_LIMITS_KEY = "routine_limits"
     private const val ACTIVE_ROUTINE_KEY = "active_routine_id"
+    private const val ROUTINE_START_TIME_KEY = "routine_start_time"
     private val routineLimits = mutableMapOf<String, Long>()
 
     fun setRoutineLimits(limits: Map<String, Int>, routineId: String) {
@@ -26,16 +28,25 @@ object RoutineLimits {
         // Save to preferences
         saveRoutineLimits()
 
-        // Mark this routine as active
-        prefs.edit { putString(ACTIVE_ROUTINE_KEY, routineId) }
-        Log.d("RoutineLimits", "Marked routine $routineId as active")
+        // Mark this routine as active and record start time
+        prefs.edit {
+            putString(ACTIVE_ROUTINE_KEY, routineId)
+            putLong(ROUTINE_START_TIME_KEY, System.currentTimeMillis())
+        }
+        Log.d(
+            "RoutineLimits",
+            "Marked routine $routineId as active, start time: ${System.currentTimeMillis()}"
+        )
     }
 
     fun clearRoutineLimits() {
         Log.d("RoutineLimits", "Clearing all routine limits")
         routineLimits.clear()
         saveRoutineLimits()
-        prefs.edit { remove(ACTIVE_ROUTINE_KEY) }
+        prefs.edit {
+            remove(ACTIVE_ROUTINE_KEY)
+            remove(ROUTINE_START_TIME_KEY)
+        }
     }
 
     fun getRoutineLimit(packageName: String): Long {
@@ -48,6 +59,45 @@ object RoutineLimits {
         val hasLimit = routineLimits.containsKey(packageName)
         Log.d("RoutineLimits", "Checking routine limit for $packageName: $hasLimit")
         return hasLimit
+    }
+
+    fun getRoutineUsageTime(packageName: String, usageStatsManager: UsageStatsManager): Long {
+        val routineStartTime = prefs.getLong(ROUTINE_START_TIME_KEY, 0L)
+        if (routineStartTime == 0L) {
+            Log.d("RoutineLimits", "No routine start time found, returning 0")
+            return 0L
+        }
+
+        val endTime = System.currentTimeMillis()
+
+        // Query usage stats with fine-grained intervals from routine start to now
+        val stats = usageStatsManager.queryUsageStats(
+            UsageStatsManager.INTERVAL_BEST,
+            routineStartTime,
+            endTime
+        )
+
+        // Filter for the specific package and calculate usage only in this time window
+        val packageStats = stats.filter { it.packageName == packageName }
+
+        var totalUsage = 0L
+        packageStats.forEach { stat ->
+            // For each usage stat, calculate the overlap with our routine period
+            val statStart = stat.firstTimeStamp.coerceAtLeast(routineStartTime)
+            val statEnd = stat.lastTimeStamp.coerceAtMost(endTime)
+
+            // Only count usage that falls within the routine period
+            if (statStart < statEnd) {
+                totalUsage += stat.totalTimeInForeground
+            }
+        }
+
+        Log.d(
+            "RoutineLimits",
+            "Usage time for $packageName since routine start ($routineStartTime to $endTime): $totalUsage ms (${packageStats.size} stat entries)"
+        )
+
+        return totalUsage
     }
 
     fun getRoutineLimits(): Map<String, Long> {

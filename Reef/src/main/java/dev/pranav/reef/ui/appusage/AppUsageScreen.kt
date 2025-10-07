@@ -39,6 +39,7 @@ import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ContainedLoadingIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ElevatedCard
@@ -183,7 +184,7 @@ fun AppUsageScreen(
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    LoadingIndicator()
+                    ContainedLoadingIndicator()
                     Spacer(Modifier.height(12.dp))
                     Text("Fetching usage data...")
                 }

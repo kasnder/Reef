@@ -95,6 +95,26 @@ class RoutinesActivity : ComponentActivity() {
             }
         }
     }
+
+    override fun onResume() {
+        super.onResume()
+        setContent {
+            ReefTheme {
+                RoutinesScreen(
+                    onBackPressed = { onBackPressedDispatcher.onBackPressed() },
+                    onCreateRoutine = {
+                        startActivity(Intent(this, CreateRoutineActivity::class.java))
+                    },
+                    onEditRoutine = { routine ->
+                        val intent = Intent(this, CreateRoutineActivity::class.java).apply {
+                            putExtra("routine_id", routine.id)
+                        }
+                        startActivity(intent)
+                    }
+                )
+            }
+        }
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

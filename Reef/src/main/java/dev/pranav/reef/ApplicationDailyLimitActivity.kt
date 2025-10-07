@@ -1,88 +1,513 @@
 package dev.pranav.reef
 
+import android.app.usage.UsageStatsManager
+import android.graphics.drawable.Drawable
 import android.os.Bundle
-import androidx.appcompat.app.AppCompatActivity
-import dev.pranav.reef.databinding.ActivityDailyLimitBinding
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Remove
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FilledTonalIconButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.core.graphics.drawable.toBitmap
+import com.patrykandpatrick.vico.core.cartesian.data.CartesianChartModelProducer
+import com.patrykandpatrick.vico.core.cartesian.data.CartesianValueFormatter
+import com.patrykandpatrick.vico.core.cartesian.data.columnSeries
+import dev.pranav.reef.ui.ReefTheme
 import dev.pranav.reef.util.AppLimits
 import dev.pranav.reef.util.applyDefaults
-import dev.pranav.reef.util.applyWindowInsets
-import java.util.concurrent.TimeUnit
+import org.nsh07.pomodoro.ui.statsScreen.TimeColumnChart
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
-class ApplicationDailyLimitActivity : AppCompatActivity() {
-    private lateinit var binding: ActivityDailyLimitBinding
+class ApplicationDailyLimitActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         applyDefaults()
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
 
-        binding = ActivityDailyLimitBinding.inflate(layoutInflater)
-        setContentView(binding.root)
+        val packageName = intent.getStringExtra("package_name") ?: run {
+            finish()
+            return
+        }
 
-        applyWindowInsets(binding.root)
-
-        val packageName = intent.getStringExtra("package_name") ?: return
         val application = packageManager.getApplicationInfo(packageName, 0)
+        val appIcon = packageManager.getApplicationIcon(application)
+        val appName = packageManager.getApplicationLabel(application).toString()
 
-        binding.apply {
-            appIcon.setImageDrawable(packageManager.getApplicationIcon(application))
-            appName.text = packageManager.getApplicationLabel(application)
+        val existingLimitMinutes = AppLimits.getLimit(packageName) / 60000
 
-            toolbar.setNavigationOnClickListener {
-                onBackPressedDispatcher.onBackPressed()
-            }
+        val usageStatsManager = getSystemService(USAGE_STATS_SERVICE) as UsageStatsManager
 
-            binding.toolbar.setOnMenuItemClickListener { item ->
-                when (item.itemId) {
-                    R.id.action_save -> {
-                        val limitInMinutes = timeSlider.value.toInt()
-                        AppLimits.setLimit(packageName, limitInMinutes)
+        setContent {
+            ReefTheme {
+                DailyLimitScreen(
+                    appName = appName,
+                    appIcon = appIcon,
+                    packageName = packageName,
+                    existingLimitMinutes = existingLimitMinutes.toInt(),
+                    usageStatsManager = usageStatsManager,
+                    onSave = { minutes ->
+                        AppLimits.setLimit(packageName, minutes)
                         AppLimits.saveLimits()
-                        finishAfterTransition()
-                        true
+                        finish()
+                    },
+                    onRemove = {
+                        AppLimits.removeLimit(packageName)
+                        AppLimits.saveLimits()
+                        finish()
+                    },
+                    onBackPressed = {
+                        onBackPressedDispatcher.onBackPressed()
                     }
+                )
+            }
+        }
+    }
+}
 
-                    else -> false
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DailyLimitScreen(
+    appName: String,
+    appIcon: Drawable,
+    packageName: String,
+    existingLimitMinutes: Int,
+    usageStatsManager: UsageStatsManager,
+    onSave: (Int) -> Unit,
+    onRemove: () -> Unit,
+    onBackPressed: () -> Unit
+) {
+    Scaffold(
+        modifier = Modifier.fillMaxSize(),
+        containerColor = MaterialTheme.colorScheme.surface,
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        "Daily Usage Limit",
+                        style = MaterialTheme.typography.titleLarge
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = onBackPressed) {
+                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Transparent
+                )
+            )
+        }
+    ) { paddingValues ->
+        DailyLimitContent(
+            appName = appName,
+            appIcon = appIcon,
+            packageName = packageName,
+            existingLimitMinutes = existingLimitMinutes,
+            usageStatsManager = usageStatsManager,
+            onSave = onSave,
+            onRemove = onRemove,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        )
+    }
+}
+
+data class HourlyUsageData(
+    val day: String,
+    val usageMinutes: Double,
+    val timestamp: Long
+)
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+fun DailyLimitContent(
+    appName: String,
+    appIcon: Drawable,
+    packageName: String,
+    existingLimitMinutes: Int,
+    usageStatsManager: UsageStatsManager,
+    onSave: (Int) -> Unit,
+    onRemove: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var hours by remember { mutableIntStateOf(existingLimitMinutes / 60) }
+    var minutes by remember { mutableIntStateOf(existingLimitMinutes % 60) }
+
+    val totalMinutes = hours * 60 + minutes
+
+    val dailyData = remember(packageName) {
+        getDailyUsageForLastWeek(packageName, usageStatsManager)
+    }
+
+    val modelProducer = remember { CartesianChartModelProducer() }
+
+    LaunchedEffect(dailyData) {
+        modelProducer.runTransaction {
+            columnSeries { series(dailyData.map { it.usageMinutes.toLong() }) }
+        }
+    }
+
+    Column(
+        modifier = modifier
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 20.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Spacer(Modifier.height(8.dp))
+
+        // App info section
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Image(
+                appIcon.toBitmap().asImageBitmap(),
+                contentDescription = appName,
+                modifier = Modifier.size(64.dp)
+            )
+
+            Text(
+                text = appName,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.SemiBold
+            )
+
+            Text(
+                text = "Set daily usage limit",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        Spacer(Modifier.height(20.dp))
+
+        // Usage graph
+        if (dailyData.isNotEmpty()) {
+            UsageGraphCard(
+                dailyData = dailyData,
+                modelProducer = modelProducer
+            )
+            Spacer(Modifier.height(32.dp))
+        }
+
+        // Time picker section
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                FilledTonalIconButton(
+                    onClick = { if (hours < 12) hours++ },
+                    modifier = Modifier.size(56.dp),
+                    shapes = IconButtonDefaults.shapes(
+                        shape = IconButtonDefaults.extraLargeSquareShape,
+                        pressedShape = IconButtonDefaults.largePressedShape
+                    )
+                ) {
+                    Icon(Icons.Rounded.Add, "Increase Hours", modifier = Modifier.size(20.dp))
+                }
+                Spacer(Modifier.width(100.dp))
+                FilledTonalIconButton(
+                    onClick = {
+                        if (minutes < 59) minutes++ else if (hours < 12) {
+                            hours++; minutes = 0
+                        }
+                    },
+                    modifier = Modifier.size(56.dp),
+                    shapes = IconButtonDefaults.shapes(
+                        shape = IconButtonDefaults.extraLargeSquareShape,
+                        pressedShape = IconButtonDefaults.largePressedShape
+                    )
+                ) {
+                    Icon(Icons.Rounded.Add, "Increase Minutes", modifier = Modifier.size(20.dp))
                 }
             }
 
-            // Limits are stored in milliseconds, but we want to show minutes in the UI
-            val existingLimit = AppLimits.getLimit(packageName) / 60000
-
-            val initialMinutes = if (existingLimit > 0) existingLimit else 60
-            timeSlider.value = initialMinutes.toFloat()
-
-            timeDisplayText.text = formatMinutes(timeSlider.value)
-
-            timeSlider.addOnChangeListener { _, value, _ ->
-                timeDisplayText.text = formatMinutes(value)
+            // Time display
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = hours.toString().padStart(2, '0'),
+                    style = MaterialTheme.typography.displayLarge.copy(
+                        fontSize = 72.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                )
+                Text(
+                    text = ":",
+                    style = MaterialTheme.typography.displayLarge.copy(
+                        fontSize = 72.sp,
+                        fontWeight = FontWeight.Bold
+                    ),
+                    modifier = Modifier.padding(horizontal = 12.dp)
+                )
+                Text(
+                    text = minutes.toString().padStart(2, '0'),
+                    style = MaterialTheme.typography.displayLarge.copy(
+                        fontSize = 72.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                )
             }
 
-            removeLimitButton.setOnClickListener {
-                AppLimits.removeLimit(packageName)
-                AppLimits.saveLimits()
-                finishAfterTransition()
+            // Decrement buttons
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                FilledTonalIconButton(
+                    onClick = { if (hours > 0) hours-- },
+                    modifier = Modifier.size(56.dp),
+                    shapes = IconButtonDefaults.shapes(
+                        shape = IconButtonDefaults.extraLargeSquareShape,
+                        pressedShape = IconButtonDefaults.largePressedShape
+                    )
+                ) {
+                    Icon(Icons.Rounded.Remove, "Decrease Hours", modifier = Modifier.size(20.dp))
+                }
+                Spacer(Modifier.width(100.dp))
+                FilledTonalIconButton(
+                    onClick = {
+                        if (minutes > 0) minutes-- else if (hours > 0) {
+                            hours--; minutes = 59
+                        }
+                    },
+                    modifier = Modifier.size(56.dp),
+                    shapes = IconButtonDefaults.shapes(
+                        shape = IconButtonDefaults.extraLargeSquareShape,
+                        pressedShape = IconButtonDefaults.largePressedShape
+                    )
+                ) {
+                    Icon(Icons.Rounded.Remove, "Decrease Minutes", modifier = Modifier.size(20.dp))
+                }
             }
+
+            Spacer(Modifier.height(4.dp))
+
+            // Labels
+            Row(
+                modifier = Modifier.fillMaxWidth(0.75f),
+                horizontalArrangement = Arrangement.SpaceAround
+            ) {
+                Text("Hours", style = MaterialTheme.typography.titleMedium)
+                Text("Minutes", style = MaterialTheme.typography.titleMedium)
+            }
+        }
+
+        Spacer(Modifier.height(24.dp))
+
+        // Quick presets
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+        ) {
+            AssistChip(onClick = { hours = 0; minutes = 15 }, label = { Text("15m") })
+            AssistChip(onClick = { hours = 0; minutes = 30 }, label = { Text("30m") })
+            AssistChip(onClick = { hours = 1; minutes = 0 }, label = { Text("1h") })
+            AssistChip(onClick = { hours = 2; minutes = 0 }, label = { Text("2h") })
+            AssistChip(onClick = { hours = 3; minutes = 0 }, label = { Text("3h") })
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // Action buttons
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Button(
+                onClick = { onSave(totalMinutes) },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = totalMinutes > 0,
+                shapes = ButtonDefaults.shapes(
+                    pressedShape = ButtonDefaults.pressedShape
+                ),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                )
+            ) {
+                Text(
+                    text = "Set Limit",
+                    style = MaterialTheme.typography.labelLargeEmphasized
+                )
+            }
+
+            if (existingLimitMinutes > 0) {
+                TextButton(
+                    onClick = onRemove,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "Remove Limit",
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
+        }
+
+        Spacer(Modifier.height(20.dp))
+    }
+}
+
+@Composable
+fun UsageGraphCard(
+    dailyData: List<HourlyUsageData>,
+    modelProducer: CartesianChartModelProducer
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
+        ),
+        shape = MaterialTheme.shapes.extraLarge
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp)
+        ) {
+            Text(
+                text = "Usage History",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+
+            Spacer(Modifier.height(4.dp))
+
+            val totalUsage = dailyData.sumOf { it.usageMinutes }
+            val avgUsage = if (dailyData.isNotEmpty()) totalUsage / dailyData.size else 0.0
+            Text(
+                text = "${avgUsage.toInt()} min/day average",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Spacer(Modifier.height(16.dp))
+
+            TimeColumnChart(
+                modelProducer = modelProducer,
+                modifier = Modifier.fillMaxWidth(),
+                yValueFormatter = CartesianValueFormatter { _, value, _ ->
+                    val totalMinutes = value.toInt()
+                    val hours = totalMinutes / 60
+                    val minutes = totalMinutes % 60
+                    when {
+                        hours > 0 && minutes > 0 -> "${hours}h ${minutes}m"
+                        hours > 0 -> "${hours}h"
+                        else -> "${minutes}m"
+                    }
+                },
+                xValueFormatter = CartesianValueFormatter { _, value, _ ->
+                    val index = value.toInt()
+                    if (index in dailyData.indices) {
+                        dailyData[index].day
+                    } else ""
+                },
+                dataValues = dailyData.map { it.usageMinutes.toFloat() }
+            )
+        }
+    }
+}
+
+private fun getDailyUsageForLastWeek(
+    packageName: String,
+    usageStatsManager: UsageStatsManager
+): List<HourlyUsageData> {
+    val endTime = System.currentTimeMillis()
+    val startTime = endTime - (7 * 24 * 60 * 60 * 1000) // 7 days ago
+
+    val stats = usageStatsManager.queryUsageStats(
+        UsageStatsManager.INTERVAL_DAILY,
+        startTime,
+        endTime
+    ).filter { it.packageName == packageName }
+
+    // Group by day
+    val dailyMap = mutableMapOf<String, Pair<Long, Long>>()
+    val dateFormatter = DateTimeFormatter.ofPattern("EEE", Locale.getDefault())
+
+    stats.forEach { stat ->
+        val instant = Instant.ofEpochMilli(stat.firstTimeStamp)
+        val zonedDateTime = instant.atZone(ZoneId.systemDefault())
+        val day = zonedDateTime.format(dateFormatter)
+        val dayStart = zonedDateTime.toLocalDate().atStartOfDay(ZoneId.systemDefault()).toInstant()
+            .toEpochMilli()
+
+        val existing = dailyMap[day]
+        if (existing == null) {
+            dailyMap[day] = Pair(dayStart, stat.totalTimeInForeground)
+        } else {
+            dailyMap[day] = Pair(existing.first, existing.second + stat.totalTimeInForeground)
         }
     }
 
-    /**
-     * Helper function to convert a float value of total minutes
-     * into a human-readable string like "1h 30m".
-     */
-    private fun formatMinutes(totalMinutes: Float): String {
-        val minutesLong = totalMinutes.toLong()
-        if (minutesLong == 0L) {
-            // Special case for 0 to show "No Limit" or "0m"
-            return "0m"
-        }
-
-        val hours = TimeUnit.MINUTES.toHours(minutesLong)
-        val remainingMinutes = minutesLong % 60
-
-        val hoursString = if (hours > 0) "${hours}h " else ""
-        val minutesString = if (remainingMinutes > 0) "${remainingMinutes}m" else ""
-
-        // If hours > 0 and minutes == 0, we don't want a trailing space
-        return (hoursString + minutesString).trim()
-    }
+    // Convert to list and sort by timestamp
+    return dailyMap.map { (day, data) ->
+        HourlyUsageData(
+            day = day,
+            usageMinutes = data.second / 60000.0,
+            timestamp = data.first
+        )
+    }.sortedBy { it.timestamp }
+        .filter { it.usageMinutes > 0 }
+        .takeLast(7) // Only show last 7 days
 }

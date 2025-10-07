@@ -27,16 +27,61 @@ object RoutineScheduler {
             return
         }
 
-        // Schedule activation
-        scheduleRoutineAction(context, routine, isActivation = true)
+        // Check if routine should be active right now
+        if (isRoutineActiveNow(routine)) {
+            // Activate immediately
+            activateRoutineNow(context, routine)
 
-        // Schedule deactivation if end time exists
-        if (routine.schedule.endTime != null) {
-            scheduleRoutineAction(context, routine, isActivation = false)
+            // Only schedule deactivation
+            if (routine.schedule.endTime != null) {
+                scheduleRoutineAction(context, routine, isActivation = false)
+            }
+        } else {
+            // Schedule activation
+            scheduleRoutineAction(context, routine, isActivation = true)
+
+            // Schedule deactivation if end time exists
+            if (routine.schedule.endTime != null) {
+                scheduleRoutineAction(context, routine, isActivation = false)
+            }
         }
     }
 
-    private fun scheduleRoutineAction(context: Context, routine: Routine, isActivation: Boolean) {
+    private fun isRoutineActiveNow(routine: Routine): Boolean {
+        val now = LocalDateTime.now()
+        val schedule = routine.schedule
+
+        val startTime = schedule.time ?: return false
+        val endTime = schedule.endTime ?: return false
+
+        val todayStart = now.withHour(startTime.hour).withMinute(startTime.minute).withSecond(0)
+        val todayEnd = now.withHour(endTime.hour).withMinute(endTime.minute).withSecond(0)
+
+        return when (schedule.type) {
+            RoutineSchedule.ScheduleType.DAILY -> {
+                now.isAfter(todayStart) && now.isBefore(todayEnd)
+            }
+
+            RoutineSchedule.ScheduleType.WEEKLY -> {
+                val currentDayOfWeek = now.dayOfWeek
+                val isCorrectDay = schedule.daysOfWeek.contains(currentDayOfWeek)
+                isCorrectDay && now.isAfter(todayStart) && now.isBefore(todayEnd)
+            }
+
+            RoutineSchedule.ScheduleType.MANUAL -> false
+        }
+    }
+
+    private fun activateRoutineNow(context: Context, routine: Routine) {
+        Log.d(TAG, "Activating routine immediately: ${routine.name}")
+
+        val limitsMap = routine.limits.associate { it.packageName to it.limitMinutes }
+        RoutineLimits.setRoutineLimits(limitsMap, routine.id)
+
+        NotificationHelper.showRoutineActivatedNotification(context, routine)
+    }
+
+    fun scheduleRoutineAction(context: Context, routine: Routine, isActivation: Boolean) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val intent = Intent(context, RoutineActivationReceiver::class.java).apply {
             putExtra("routine_id", routine.id)
@@ -174,16 +219,14 @@ class RoutineActivationReceiver : BroadcastReceiver() {
     private fun activateRoutine(context: Context, routine: Routine) {
         Log.d("RoutineActivationReceiver", "Activating routine: ${routine.name}")
 
-        // Apply routine limits using the separate system
         val limitsMap = routine.limits.associate { it.packageName to it.limitMinutes }
         RoutineLimits.setRoutineLimits(limitsMap, routine.id)
 
         // Schedule next occurrence if recurring
         if (routine.schedule.isRecurring) {
-            RoutineScheduler.scheduleRoutine(context, routine)
+            RoutineScheduler.scheduleRoutineAction(context, routine, isActivation = true)
         }
 
-        // Show notification about routine activation
         NotificationHelper.showRoutineActivatedNotification(context, routine)
     }
 

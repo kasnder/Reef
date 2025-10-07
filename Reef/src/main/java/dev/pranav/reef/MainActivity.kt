@@ -5,11 +5,13 @@ import android.content.Intent
 import android.content.res.ColorStateList
 import android.graphics.drawable.RippleDrawable
 import android.graphics.drawable.ShapeDrawable
+import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.edit
 import com.google.android.material.color.MaterialColors
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.shape.MaterialShapes
 import com.google.android.material.transition.platform.MaterialSharedAxis
 import dev.pranav.reef.accessibility.FocusModeService
@@ -117,13 +119,51 @@ class MainActivity : AppCompatActivity() {
         binding.whitelistApps.setOnClickListener {
             startActivity(Intent(this, WhitelistActivity::class.java))
         }
+
+        binding.aboutButton.setOnClickListener {
+            startActivity(Intent(this, AboutActivity::class.java))
+        }
+
+        showDonateDialogIfNeeded()
     }
 
     override fun onResume() {
         super.onResume()
+
         if (pendingFocusModeStart && isAccessibilityServiceEnabledForBlocker()) {
             pendingFocusModeStart = false
             startActivity(Intent(this, TimerActivity::class.java))
+        }
+
+        if (!isAccessibilityServiceEnabledForBlocker() && !prefs.getBoolean("first_run", true)) {
+            showAccessibilityDialog()
+        } else {
+            showDonateDialogIfNeeded()
+        }
+    }
+
+    private fun showDonateDialogIfNeeded() {
+        if (!prefs.getBoolean("donate_dialog_shown", false) && !prefs.getBoolean(
+                "first_run",
+                true
+            )
+        ) {
+            MaterialAlertDialogBuilder(this)
+                .setTitle("Enjoying Reef?")
+                .setMessage("Reef is built and maintained by an independent developer in their free time. Your support helps keep this project alive and improving.\n\nConsider supporting if you find it valuable.")
+                .setPositiveButton("Support") { _, _ ->
+                    val intent = Intent(
+                        Intent.ACTION_VIEW,
+                        Uri.parse("https://PranavPurwar.github.io/donate.html")
+                    )
+                    startActivity(intent)
+                    prefs.edit { putBoolean("donate_dialog_shown", true) }
+                }
+                .setNegativeButton("Maybe Later") { _, _ ->
+                    prefs.edit { putBoolean("donate_dialog_shown", true) }
+                }
+                .setCancelable(true)
+                .show()
         }
     }
 

@@ -63,19 +63,43 @@ class BlockerService : AccessibilityService() {
                 "Package: $packageName, className: ${event.className} hasRoutineLimit: $hasRoutineLimit, hasRegularLimit: $hasRegularLimit"
             )
 
-            if (hasRoutineLimit || hasRegularLimit) {
+            // Check routine limits first - but verify usage time during routine period
+            if (hasRoutineLimit) {
                 val usageStatsManager = getSystemService(USAGE_STATS_SERVICE) as UsageStatsManager
-                val usageTime = AppLimits.getUsageTime(packageName, usageStatsManager)
-
-                val (limit, limitType) = if (hasRoutineLimit) {
-                    Pair(RoutineLimits.getRoutineLimit(packageName), "routine")
-                } else {
-                    Pair(AppLimits.getLimit(packageName), "regular")
-                }
+                val routineUsageTime =
+                    RoutineLimits.getRoutineUsageTime(packageName, usageStatsManager)
+                val routineLimit = RoutineLimits.getRoutineLimit(packageName)
 
                 Log.d(
                     "BlockerService",
-                    "UsageTime: $usageTime ms, Limit: $limit ms, LimitType: $limitType"
+                    "Routine check for $packageName - UsageTime: $routineUsageTime ms, Limit: $routineLimit ms"
+                )
+
+                if (routineUsageTime >= routineLimit) {
+                    Log.d(
+                        "BlockerService",
+                        "BLOCKING $packageName - routine usage ($routineUsageTime) >= limit ($routineLimit)"
+                    )
+                    showTimeLimitNotification(packageName, "routine")
+                    performGlobalAction(GLOBAL_ACTION_HOME)
+                } else {
+                    Log.d(
+                        "BlockerService",
+                        "NOT blocking $packageName - routine usage ($routineUsageTime) < limit ($routineLimit)"
+                    )
+                }
+                return
+            }
+
+            // Otherwise check regular app limits with usage time
+            if (hasRegularLimit) {
+                val usageStatsManager = getSystemService(USAGE_STATS_SERVICE) as UsageStatsManager
+                val usageTime = AppLimits.getUsageTime(packageName, usageStatsManager)
+                val limit = AppLimits.getLimit(packageName)
+
+                Log.d(
+                    "BlockerService",
+                    "UsageTime: $usageTime ms, Limit: $limit ms, LimitType: regular"
                 )
 
                 if (usageTime >= limit) {
@@ -83,7 +107,7 @@ class BlockerService : AccessibilityService() {
                         "BlockerService",
                         "BLOCKING $packageName - usage ($usageTime) >= limit ($limit)"
                     )
-                    showTimeLimitNotification(packageName, limitType)
+                    showTimeLimitNotification(packageName, "regular")
                     performGlobalAction(GLOBAL_ACTION_HOME)
                 } else {
                     Log.d(
@@ -180,8 +204,8 @@ class BlockerService : AccessibilityService() {
 
     fun getFormattedTime(millis: Long): String {
         val totalSeconds = millis / 1000
-        val minutes = totalSeconds / 60
-        val seconds = totalSeconds % 60
-        return String.format(java.util.Locale.getDefault(), "%02d:%02d", minutes, seconds)
+        val hours = totalSeconds / 3600
+        val minutes = (totalSeconds % 3600) / 60
+        return String.format(java.util.Locale.getDefault(), "%02d:%02d", hours, minutes)
     }
 }
