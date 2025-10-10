@@ -37,6 +37,7 @@ class FocusModeService : Service() {
     private var countDownTimer: CountDownTimer? = null
     private var currentMillisRemaining: Long = 0
     private var isStrictMode: Boolean = false
+    private var notificationBuilder: NotificationCompat.Builder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
@@ -117,7 +118,7 @@ class FocusModeService : Service() {
             NOTIFICATION_ID,
             createNotification(
                 title = getString(R.string.focus_mode),
-                text = "Paused - ${getFormattedTime(currentMillisRemaining)}",
+                text = getFormattedTime(currentMillisRemaining),
                 showPauseButton = false
             )
         )
@@ -175,23 +176,28 @@ class FocusModeService : Service() {
         text: String,
         showPauseButton: Boolean
     ): android.app.Notification {
-        val intent = Intent(this, TimerActivity::class.java).apply {
-            putExtra(EXTRA_TIME_LEFT, text)
+        if (notificationBuilder == null) {
+            val intent = Intent(this, TimerActivity::class.java).apply {
+                putExtra(EXTRA_TIME_LEFT, text)
+            }
+
+            val pendingIntent = PendingIntent.getActivity(
+                this, 0, intent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+            )
+
+            notificationBuilder = NotificationCompat.Builder(this, CHANNEL_ID)
+                .setContentIntent(pendingIntent)
+                .setSmallIcon(R.drawable.ic_launcher_foreground)
+                .setDefaults(NotificationCompat.DEFAULT_ALL)
+                .setPriority(NotificationCompat.PRIORITY_LOW)
+                .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_DEFAULT)
+                .setOngoing(true)
+                .setOnlyAlertOnce(true)
         }
 
-        val pendingIntent = PendingIntent.getActivity(
-            this, 0, intent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-        )
-
-        val builder = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle(title)
-            .setContentText(text)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
-            .setContentIntent(pendingIntent)
-            .setDefaults(NotificationCompat.FOREGROUND_SERVICE_DEFAULT)
-            .setPriority(NotificationCompat.PRIORITY_LOW)
-            .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_DEFAULT)
-            .setOngoing(true)
+        notificationBuilder?.setContentTitle(title)
+        notificationBuilder?.setContentText(text)
+        notificationBuilder?.clearActions()
 
         if (showPauseButton) {
             val pauseIntent = Intent(this, FocusModeService::class.java).apply {
@@ -203,7 +209,7 @@ class FocusModeService : Service() {
                 pauseIntent,
                 PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
             )
-            builder.addAction(
+            notificationBuilder?.addAction(
                 R.drawable.ic_launcher_foreground,
                 "Pause",
                 pausePendingIntent
@@ -218,14 +224,15 @@ class FocusModeService : Service() {
                 resumeIntent,
                 PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
             )
-            builder.addAction(
+            notificationBuilder?.addAction(
                 R.drawable.ic_launcher_foreground,
                 "Resume",
                 resumePendingIntent
             )
         }
 
-        return builder.build()
+        return notificationBuilder?.build()
+            ?: throw IllegalStateException("Builder not initialized")
     }
 
     private fun sendTimerUpdateBroadcast(formattedTime: String) {

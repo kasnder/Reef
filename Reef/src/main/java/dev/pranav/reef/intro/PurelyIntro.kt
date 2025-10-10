@@ -237,9 +237,10 @@ class PurelyIntro : AppIntro2() {
 
     private fun createNotificationChannel() {
         val descriptionText = "Shows reminders for screen time and when apps are blocked."
-        val importance = NotificationManager.IMPORTANCE_MAX
+        val importance = NotificationManager.IMPORTANCE_HIGH
         val channel = NotificationChannel(CHANNEL_ID, "Content Blocker", importance).apply {
             description = descriptionText
+            setSound(null, null)
         }
         val notificationManager: NotificationManager =
             getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager

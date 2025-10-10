@@ -33,12 +33,13 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedCard
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -59,6 +60,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import dev.pranav.reef.BuildConfig
+import dev.pranav.reef.ui.icons.Discord
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -75,8 +77,7 @@ fun AboutScreen(
                 title = {
                     Text(
                         "About",
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold
+                        style = MaterialTheme.typography.headlineMedium
                     )
                 },
                 navigationIcon = {
@@ -327,6 +328,19 @@ fun LinksSection() {
             modifier = Modifier.padding(horizontal = 4.dp)
         )
 
+        LinkCard(
+            title = "Discord Community",
+            icon = Discord,
+            modifier = Modifier.fillMaxWidth(),
+            onClick = {
+                val intent = Intent(
+                    Intent.ACTION_VIEW,
+                    Uri.parse("https://discord.gg/46wCMRVAre")
+                )
+                context.startActivity(intent)
+            }
+        )
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -373,6 +387,7 @@ fun LinksSection() {
     }
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun LinkCard(
     title: String,
@@ -380,14 +395,13 @@ fun LinkCard(
     modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
-    OutlinedCard(
+    OutlinedButton(
         modifier = modifier,
-        onClick = onClick
+        onClick = onClick,
+        colors = ButtonDefaults.outlinedButtonColors(),
+        shapes = ButtonDefaults.shapes()
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
@@ -395,7 +409,7 @@ fun LinkCard(
                 imageVector = icon,
                 contentDescription = null,
                 modifier = Modifier.size(20.dp),
-                tint = MaterialTheme.colorScheme.primary
+                tint = MaterialTheme.colorScheme.surfaceTint
             )
 
             Text(
