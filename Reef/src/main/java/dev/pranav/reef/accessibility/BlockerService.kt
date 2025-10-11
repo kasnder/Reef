@@ -16,6 +16,7 @@ import dev.pranav.reef.AppUsageActivity
 import dev.pranav.reef.R
 import dev.pranav.reef.util.AppLimits
 import dev.pranav.reef.util.CHANNEL_ID
+import dev.pranav.reef.util.NotificationHelper.createNotificationChannel
 import dev.pranav.reef.util.RoutineLimits
 import dev.pranav.reef.util.RoutineManager
 import dev.pranav.reef.util.Whitelist
@@ -30,6 +31,8 @@ class BlockerService : AccessibilityService() {
         if (!isPrefsInitialized) {
             prefs = getSharedPreferences("prefs", MODE_PRIVATE)
         }
+
+        createNotificationChannel()
 
         // Load routine limits when the service connects
         RoutineLimits.loadRoutineLimits()

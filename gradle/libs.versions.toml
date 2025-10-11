@@ -1,18 +1,18 @@
 [versions]
-agp = "9.0.0-alpha09"
+agp = "9.0.0-alpha10"
 appintro = "c235ce859c"
-firebaseBom = "34.3.0"
+firebaseBom = "34.4.0"
 kotlin = "2.2.20"
 coreKtx = "1.17.0"
 appcompat = "1.7.1"
 material = "1.14.0-alpha05"
 activity = "1.12.0-alpha09"
-playServicesAds = "24.6.0"
-googleServices = "4.4.3"
+playServicesAds = "24.7.0"
+googleServices = "4.4.4"
 gson = "2.13.2"
-composeBom = "2025.09.01"
-material3 = "1.5.0-alpha04"
-vico = "2.2.0"
+composeBom = "2025.10.00"
+material3 = "1.5.0-alpha06"
+vico = "2.2.1"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }

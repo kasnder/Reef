@@ -3,8 +3,6 @@ package dev.pranav.reef.intro
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.AppOpsManager
-import android.app.NotificationChannel
-import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -31,7 +29,7 @@ import com.github.appintro.AppIntroPageTransformerType
 import com.google.android.material.color.DynamicColors
 import com.google.android.material.color.MaterialColors
 import dev.pranav.reef.R
-import dev.pranav.reef.util.CHANNEL_ID
+import dev.pranav.reef.util.NotificationHelper.createNotificationChannel
 import dev.pranav.reef.util.isAccessibilityServiceEnabledForBlocker
 import dev.pranav.reef.util.prefs
 import dev.pranav.reef.util.showAccessibilityDialog
@@ -183,7 +181,6 @@ class PurelyIntro : AppIntro2() {
                             data = "package:$packageName".toUri()
                         })
                     }
-                    createNotificationChannel()
                     prefs.edit { putBoolean("first_run", false) }
                 },
                 isTaskCompleted = {
@@ -233,17 +230,5 @@ class PurelyIntro : AppIntro2() {
     override fun onDonePressed(currentFragment: Fragment?) {
         super.onDonePressed(currentFragment)
         finish()
-    }
-
-    private fun createNotificationChannel() {
-        val descriptionText = "Shows reminders for screen time and when apps are blocked."
-        val importance = NotificationManager.IMPORTANCE_HIGH
-        val channel = NotificationChannel(CHANNEL_ID, "Content Blocker", importance).apply {
-            description = descriptionText
-            setSound(null, null)
-        }
-        val notificationManager: NotificationManager =
-            getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        notificationManager.createNotificationChannel(channel)
     }
 }

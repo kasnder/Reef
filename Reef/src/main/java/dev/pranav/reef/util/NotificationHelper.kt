@@ -1,6 +1,8 @@
 package dev.pranav.reef.util
 
 import android.Manifest
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
@@ -14,6 +16,18 @@ import dev.pranav.reef.data.Routine
 
 object NotificationHelper {
     private const val ROUTINE_NOTIFICATION_ID = 100
+
+    fun Context.createNotificationChannel() {
+        val descriptionText = "Shows reminders for screen time and when apps are blocked."
+        val importance = NotificationManager.IMPORTANCE_HIGH
+        val channel = NotificationChannel(CHANNEL_ID, "Content Blocker", importance).apply {
+            description = descriptionText
+            setSound(null, null)
+        }
+        val notificationManager: NotificationManager =
+            getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.createNotificationChannel(channel)
+    }
 
     fun showRoutineActivatedNotification(context: Context, routine: Routine) {
         val intent = Intent(context, RoutinesActivity::class.java)

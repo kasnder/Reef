@@ -94,20 +94,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-//            MaterialAlertDialogBuilder(this)
-//                .setTitle(getString(R.string.focus_mode))
-//                .setMessage(getString(R.string.focus_mode_description))
-//                .setPositiveButton(getString(R.string.common_continue)) { _, _ ->
-//                    if (isAccessibilityServiceEnabledForBlocker()) {
-//                        startActivity(Intent(this, TimerActivity::class.java))
-//                    } else {
-//                        pendingFocusModeStart = true
-//                        showAccessibilityDialog()
-//                    }
-//                }
-//                .setNegativeButton(getString(android.R.string.cancel), null)
-//                .show()
-
         binding.appUsage.setOnClickListener {
             startActivity(Intent(this, AppUsageActivity::class.java))
         }
@@ -133,12 +119,6 @@ class MainActivity : AppCompatActivity() {
         if (pendingFocusModeStart && isAccessibilityServiceEnabledForBlocker()) {
             pendingFocusModeStart = false
             startActivity(Intent(this, TimerActivity::class.java))
-        }
-
-        if (!isAccessibilityServiceEnabledForBlocker() && !prefs.getBoolean("first_run", true)) {
-            showAccessibilityDialog()
-        } else {
-            showDonateDialogIfNeeded()
         }
     }
 
