@@ -106,11 +106,12 @@ fun AboutScreen(
 
             AppInfoCard()
 
-            DeveloperCard()
 
             SupportCard()
 
             LinksSection()
+
+            DeveloperCard()
 
             FooterText()
 
@@ -242,6 +243,7 @@ fun DeveloperCard() {
     }
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun SupportCard() {
     val context = LocalContext.current
@@ -302,15 +304,19 @@ fun SupportCard() {
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.filledTonalButtonColors(
                     containerColor = MaterialTheme.colorScheme.tertiaryContainer
-                )
+                ),
+                shapes = ButtonDefaults.shapes()
             ) {
                 Icon(
                     Icons.Default.Favorite,
                     contentDescription = null,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(24.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Donate")
+                Text(
+                    "Donate",
+                    style = MaterialTheme.typography.titleMedium
+                )
             }
         }
     }
