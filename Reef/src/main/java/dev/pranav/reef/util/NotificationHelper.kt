@@ -19,10 +19,13 @@ object NotificationHelper {
     private const val REMINDER_NOTIFICATION_ID = 200
 
     fun Context.createNotificationChannel() {
-        val descriptionText = "Shows reminders for screen time and when apps are blocked."
         val importance = NotificationManager.IMPORTANCE_HIGH
-        val channel = NotificationChannel(CHANNEL_ID, "Content Blocker", importance).apply {
-            description = descriptionText
+        val channel = NotificationChannel(
+            CHANNEL_ID,
+            getString(R.string.blocker_channel_name),
+            importance
+        ).apply {
+            description = getString(R.string.blocker_channel_description)
             setSound(null, null)
         }
         val notificationManager: NotificationManager =
@@ -37,13 +40,15 @@ object NotificationHelper {
         )
 
         val limitsText = when (routine.limits.size) {
-            0 -> "No app limits applied"
-            1 -> "1 app limit applied"
-            else -> "${routine.limits.size} app limits applied"
+            0 -> context.getString(R.string.no_app_limits_applied)
+            else -> context.resources.getQuantityString(
+                R.plurals.app_limits_applied,
+                routine.limits.size
+            )
         }
 
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setContentTitle("Routine Activated")
+            .setContentTitle(context.getString(R.string.routine_activated))
             .setContentText("${routine.name} - $limitsText")
             .setSmallIcon(R.drawable.round_schedule_24)
             .setAutoCancel(true)
@@ -66,8 +71,8 @@ object NotificationHelper {
         )
 
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setContentTitle("Routine Deactivated")
-            .setContentText("${routine.name} has ended")
+            .setContentTitle(context.getString(R.string.routine_deactivated))
+            .setContentText(context.getString(R.string.routine_has_ended, routine.name))
             .setSmallIcon(R.drawable.round_schedule_24)
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)
@@ -100,8 +105,14 @@ object NotificationHelper {
         )
 
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setContentTitle("Time Limit Reminder")
-            .setContentText("$appName will be blocked in $minutes minutes")
+            .setContentTitle(context.getString(R.string.time_limit_reminder))
+            .setContentText(
+                context.resources.getQuantityString(
+                    R.plurals.app_will_be_blocked_in,
+                    minutes,
+                    appName
+                )
+            )
             .setSmallIcon(R.drawable.round_hourglass_disabled_24)
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)

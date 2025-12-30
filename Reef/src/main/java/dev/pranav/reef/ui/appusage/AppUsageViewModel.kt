@@ -277,6 +277,7 @@ class AppUsageViewModel(
             cal.set(Calendar.MILLISECOND, 0)
 
             val startMillis = cal.timeInMillis
+            val dayLabel = dayFormat.format(cal.time)
 
             cal.set(Calendar.HOUR_OF_DAY, 23)
             cal.set(Calendar.MINUTE, 59)
@@ -285,18 +286,17 @@ class AppUsageViewModel(
 
             val endMillis = minOf(cal.timeInMillis, now)
 
-            // Only query if end is after start (prevents crashes on weird DST shifts)
             val totalUsageMs = if (endMillis > startMillis) {
                 UsageCalculator.calculateUsage(
                     usageStatsManager,
                     startMillis,
                     endMillis
-                ).values.sum()
+                ).filter { it.key != packageName }.values.sum()
             } else 0L
 
             result.add(
                 WeeklyUsageData(
-                    dayOfWeek = dayFormat.format(cal.time),
+                    dayOfWeek = dayLabel,
                     totalUsageHours = totalUsageMs / 3600000f,
                     timestamp = startMillis
                 )

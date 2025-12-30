@@ -28,9 +28,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.edit
+import androidx.core.net.toUri
 import dev.pranav.reef.ui.ReefTheme
 import dev.pranav.reef.util.prefs
 
@@ -109,12 +112,15 @@ class SettingsActivity: ComponentActivity() {
                 android.media.RingtoneManager.EXTRA_RINGTONE_TYPE,
                 android.media.RingtoneManager.TYPE_NOTIFICATION
             )
-            putExtra(android.media.RingtoneManager.EXTRA_RINGTONE_TITLE, "Select Transition Sound")
+            putExtra(
+                android.media.RingtoneManager.EXTRA_RINGTONE_TITLE,
+                getString(R.string.select_transition_sound)
+            )
             val currentSound = prefs.getString("pomodoro_sound", null)
             if (!currentSound.isNullOrEmpty()) {
                 putExtra(
                     android.media.RingtoneManager.EXTRA_RINGTONE_EXISTING_URI,
-                    android.net.Uri.parse(currentSound)
+                    currentSound.toUri()
                 )
             }
         }
@@ -149,25 +155,26 @@ fun MainSettingsScreen(
     onNavigate: (SettingsScreen) -> Unit
 ) {
     val context = LocalContext.current
+    val resources = LocalResources.current
     var enableDND by remember { mutableStateOf(prefs.getBoolean("enable_dnd", false)) }
 
     val menuItems = listOf(
         SettingsMenuItem(
             icon = Icons.Rounded.Timer,
-            title = "Pomodoro",
-            subtitle = "Configure focus sessions and breaks",
+            title = stringResource(R.string.pomodoro),
+            subtitle = stringResource(R.string.pomodoro_subtitle),
             destination = SettingsScreen.Pomodoro
         ),
         SettingsMenuItem(
             icon = Icons.Rounded.Block,
-            title = "App Blocking",
-            subtitle = "Configure blocked apps in main screen",
+            title = stringResource(R.string.app_blocking),
+            subtitle = stringResource(R.string.app_blocking_subtitle),
             destination = SettingsScreen.Main
         ),
         SettingsMenuItem(
             icon = Icons.Outlined.Info,
-            title = "About",
-            subtitle = "App info and credits",
+            title = stringResource(R.string.about),
+            subtitle = stringResource(R.string.about_subtitle),
             destination = SettingsScreen.Main
         )
     )
@@ -178,13 +185,16 @@ fun MainSettingsScreen(
             LargeTopAppBar(
                 title = {
                     Text(
-                        "Settings",
+                        stringResource(R.string.settings),
                         style = MaterialTheme.typography.headlineLarge
                     )
                 },
                 navigationIcon = {
                     IconButton(onClick = onBackPressed) {
-                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            Icons.AutoMirrored.Rounded.ArrowBack,
+                            contentDescription = stringResource(R.string.back)
+                        )
                     }
                 }
             )
@@ -198,7 +208,7 @@ fun MainSettingsScreen(
         ) {
             item {
                 Text(
-                    text = "Timer",
+                    text = stringResource(R.string.timer_section),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary,
@@ -221,13 +231,13 @@ fun MainSettingsScreen(
                             .padding(4.dp),
                         headlineContent = {
                             Text(
-                                text = "Enable Do Not Disturb in focus mode",
+                                text = stringResource(R.string.enable_dnd),
                                 style = MaterialTheme.typography.titleMedium
                             )
                         },
                         supportingContent = {
                             Text(
-                                text = "Silence notifications during focus",
+                                text = stringResource(R.string.dnd_description),
                                 style = MaterialTheme.typography.bodySmall
                             )
                         },
@@ -260,7 +270,7 @@ fun MainSettingsScreen(
                         when (item.destination) {
                             SettingsScreen.Pomodoro -> onNavigate(SettingsScreen.Pomodoro)
                             SettingsScreen.Main -> {
-                                if (item.title == "About") {
+                                if (item.title == resources.getString(R.string.about)) {
                                     context.startActivity(
                                         Intent(
                                             context,
@@ -310,6 +320,7 @@ fun PomodoroSettingsScreen(
             )
         )
     }
+    val resources = LocalResources.current
 
     BackHandler(onBack = onBackPressed)
 
@@ -319,13 +330,16 @@ fun PomodoroSettingsScreen(
             LargeTopAppBar(
                 title = {
                     Text(
-                        "Pomodoro Settings",
+                        stringResource(R.string.pomodoro_settings_title),
                         style = MaterialTheme.typography.headlineLarge
                     )
                 },
                 navigationIcon = {
                     IconButton(onClick = onBackPressed) {
-                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            Icons.AutoMirrored.Rounded.ArrowBack,
+                            contentDescription = stringResource(R.string.back)
+                        )
                     }
                 }
             )
@@ -339,7 +353,7 @@ fun PomodoroSettingsScreen(
         ) {
             item {
                 Text(
-                    text = "Durations",
+                    text = stringResource(R.string.durations_section),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary,
@@ -350,40 +364,40 @@ fun PomodoroSettingsScreen(
             itemsIndexed(
                 items = listOf(
                     NumberSetting(
-                        label = "Focus Duration",
+                        label = resources.getString(R.string.focus_duration),
                         value = focusMinutes,
                         range = 1..120,
-                        suffix = "min",
+                        suffix = resources.getString(R.string.min_suffix),
                         onValueChange = { v ->
                             focusMinutes = v
                             prefs.edit { putInt("pomodoro_focus_minutes", v) }
                         }
                     ),
                     NumberSetting(
-                        label = "Short Break",
+                        label = resources.getString(R.string.short_break),
                         value = shortBreakMinutes,
                         range = 1..30,
-                        suffix = "min",
+                        suffix = resources.getString(R.string.min_suffix),
                         onValueChange = { v ->
                             shortBreakMinutes = v
                             prefs.edit { putInt("pomodoro_short_break_minutes", v) }
                         }
                     ),
                     NumberSetting(
-                        label = "Long Break",
+                        label = resources.getString(R.string.long_break),
                         value = longBreakMinutes,
                         range = 1..60,
-                        suffix = "min",
+                        suffix = resources.getString(R.string.min_suffix),
                         onValueChange = { v ->
                             longBreakMinutes = v
                             prefs.edit { putInt("pomodoro_long_break_minutes", v) }
                         }
                     ),
                     NumberSetting(
-                        label = "Cycles Before Long Break",
+                        label = resources.getString(R.string.cycles_before_long_break),
                         value = cycles,
                         range = 1..10,
-                        suffix = "cycles",
+                        suffix = resources.getString(R.string.cycles_suffix),
                         onValueChange = { v ->
                             cycles = v
                             prefs.edit { putInt("pomodoro_cycles", v) }
@@ -405,7 +419,7 @@ fun PomodoroSettingsScreen(
             item {
                 HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
                 Text(
-                    text = "Notifications",
+                    text = stringResource(R.string.notifications_section),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary,
@@ -427,11 +441,14 @@ fun PomodoroSettingsScreen(
                             }
                             .padding(4.dp),
                         headlineContent = {
-                            Text("Sound", style = MaterialTheme.typography.titleMedium)
+                            Text(
+                                stringResource(R.string.sound),
+                                style = MaterialTheme.typography.titleMedium
+                            )
                         },
                         supportingContent = {
                             Text(
-                                "Play sound on phase transitions",
+                                stringResource(R.string.sound_description),
                                 style = MaterialTheme.typography.bodySmall
                             )
                         },
@@ -463,11 +480,14 @@ fun PomodoroSettingsScreen(
                                 .clickable(onClick = onSoundPicker)
                                 .padding(4.dp),
                             headlineContent = {
-                                Text("Choose Sound", style = MaterialTheme.typography.titleMedium)
+                                Text(
+                                    stringResource(R.string.choose_sound),
+                                    style = MaterialTheme.typography.titleMedium
+                                )
                             },
                             supportingContent = {
                                 Text(
-                                    "Select notification ringtone",
+                                    stringResource(R.string.choose_sound_description),
                                     style = MaterialTheme.typography.bodySmall
                                 )
                             },
@@ -500,11 +520,14 @@ fun PomodoroSettingsScreen(
                             }
                             .padding(4.dp),
                         headlineContent = {
-                            Text("Vibration", style = MaterialTheme.typography.titleMedium)
+                            Text(
+                                stringResource(R.string.vibration),
+                                style = MaterialTheme.typography.titleMedium
+                            )
                         },
                         supportingContent = {
                             Text(
-                                "Vibrate on phase transitions",
+                                stringResource(R.string.vibration_description),
                                 style = MaterialTheme.typography.bodySmall
                             )
                         },
@@ -568,7 +591,7 @@ fun SettingsMenuItem(
                 )
             },
             trailingContent = {
-                if (item.title != "App Blocking") {
+                if (item.title != stringResource(R.string.app_blocking)) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
                         contentDescription = null

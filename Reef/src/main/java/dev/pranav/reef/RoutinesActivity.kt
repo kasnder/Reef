@@ -5,17 +5,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -23,35 +13,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.outlined.Schedule
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExtendedFloatingActionButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.LargeTopAppBar
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarDuration
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -70,7 +39,7 @@ import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
 
-class RoutinesActivity : ComponentActivity() {
+class RoutinesActivity: ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         applyDefaults()
 
@@ -106,6 +75,7 @@ fun RoutinesScreen(
     onEditRoutine: (Routine) -> Unit
 ) {
     val context = LocalContext.current
+    val resources = LocalResources.current
     var routines by remember { mutableStateOf(RoutineManager.getRoutines()) }
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     var showActivateDialog by remember { mutableStateOf<Routine?>(null) }
@@ -136,7 +106,10 @@ fun RoutinesScreen(
                 title = { Text(stringResource(R.string.routines)) },
                 navigationIcon = {
                     IconButton(onClick = onBackPressed) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.back)
+                        )
                     }
                 },
                 scrollBehavior = scrollBehavior
@@ -179,7 +152,8 @@ fun RoutinesScreen(
                         onToggle = { _ ->
                             RoutineManager.toggleRoutine(routine.id, context)
                             routines = RoutineManager.getRoutines()
-                        }
+                        },
+                        context = context
                     )
                 }
             }
@@ -189,8 +163,8 @@ fun RoutinesScreen(
     showActivateDialog?.let { routine ->
         AlertDialog(
             onDismissRequest = { showActivateDialog = null },
-            title = { Text("Activate Routine") },
-            text = { Text("Do you want to activate '${routine.name}' now?") },
+            title = { Text(stringResource(R.string.activate_routine)) },
+            text = { Text(stringResource(R.string.activate_routine_confirmation, routine.name)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -199,26 +173,32 @@ fun RoutinesScreen(
 
                         @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
                         val limitsText = when (routine.limits.size) {
-                            0 -> "No app limits were applied"
-                            1 -> "1 app limit has been applied"
-                            else -> "${routine.limits.size} app limits have been applied"
+                            0 -> resources.getString(R.string.no_app_limits_applied)
+                            else -> resources.getQuantityString(
+                                R.plurals.app_limits_applied,
+                                routine.limits.size
+                            )
                         }
 
                         kotlinx.coroutines.MainScope().launch {
                             snackbarHostState.showSnackbar(
-                                "Routine '${routine.name}' activated! $limitsText",
+                                resources.getString(
+                                    R.string.routine_activated_toast,
+                                    routine.name,
+                                    limitsText
+                                ),
                                 duration = SnackbarDuration.Long
                             )
                         }
                     }
                 ) {
-                    Text("Activate")
+                    Text(stringResource(R.string.activate))
                 }
             },
             dismissButton = {
                 Row {
                     TextButton(onClick = { showActivateDialog = null }) {
-                        Text("Cancel")
+                        Text(stringResource(R.string.cancel))
                     }
                     TextButton(
                         onClick = {
@@ -226,7 +206,7 @@ fun RoutinesScreen(
                             onEditRoutine(routine)
                         }
                     ) {
-                        Text("Edit")
+                        Text(stringResource(R.string.edit))
                     }
                 }
             }
@@ -299,7 +279,8 @@ fun EmptyState() {
 fun RoutineItem(
     routine: Routine,
     onClick: () -> Unit,
-    onToggle: (Boolean) -> Unit
+    onToggle: (Boolean) -> Unit,
+    context: android.content.Context
 ) {
     Card(
         onClick = onClick,
@@ -337,7 +318,7 @@ fun RoutineItem(
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = formatSchedule(routine.schedule),
+                    text = formatSchedule(routine.schedule, context),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -351,9 +332,11 @@ fun RoutineItem(
                     ) {
                         Text(
                             text = when (routine.limits.size) {
-                                0 -> "No app limits set"
-                                1 -> "1 app with limit"
-                                else -> "${routine.limits.size} apps with limits"
+                                0 -> stringResource(R.string.no_app_limits_set)
+                                else -> pluralStringResource(
+                                    R.plurals.app_limits_applied,
+                                    routine.limits.size
+                                )
                             },
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onTertiaryContainer,
@@ -387,22 +370,26 @@ fun RoutineItem(
     }
 }
 
-private fun formatSchedule(schedule: RoutineSchedule?): String {
-    if (schedule == null) return "Unknown schedule"
+private fun formatSchedule(schedule: RoutineSchedule?, context: android.content.Context): String {
+    if (schedule == null) return context.getString(R.string.unknown_schedule)
 
     return when (schedule.type) {
         RoutineSchedule.ScheduleType.DAILY -> {
             val timeRange = if (schedule.time != null && schedule.endTime != null) {
-                " from ${formatTime(schedule.time!!)} to ${formatTime(schedule.endTime!!)}"
+                context.getString(
+                    R.string.schedule_from_to,
+                    formatTime(schedule.time!!),
+                    formatTime(schedule.endTime!!)
+                )
             } else if (schedule.time != null) {
-                " at ${formatTime(schedule.time!!)}"
+                context.getString(R.string.schedule_at, formatTime(schedule.time!!))
             } else ""
-            "Daily$timeRange"
+            context.getString(R.string.daily) + timeRange
         }
 
         RoutineSchedule.ScheduleType.WEEKLY -> {
             val days = if (schedule.daysOfWeek.size == 7) {
-                "Every day"
+                context.getString(R.string.every_day)
             } else if (schedule.daysOfWeek.containsAll(
                     listOf(
                         DayOfWeek.MONDAY,
@@ -413,7 +400,7 @@ private fun formatSchedule(schedule: RoutineSchedule?): String {
                     )
                 )
             ) {
-                "Weekdays"
+                context.getString(R.string.weekdays)
             } else if (schedule.daysOfWeek.containsAll(
                     listOf(
                         DayOfWeek.SATURDAY,
@@ -421,7 +408,7 @@ private fun formatSchedule(schedule: RoutineSchedule?): String {
                     )
                 )
             ) {
-                "Weekends"
+                context.getString(R.string.weekends)
             } else {
                 schedule.daysOfWeek.sortedBy { it.value }
                     .joinToString(", ") {
@@ -432,14 +419,18 @@ private fun formatSchedule(schedule: RoutineSchedule?): String {
                     }
             }
             val timeRange = if (schedule.time != null && schedule.endTime != null) {
-                " from ${formatTime(schedule.time!!)} to ${formatTime(schedule.endTime!!)}"
+                context.getString(
+                    R.string.schedule_from_to,
+                    formatTime(schedule.time!!),
+                    formatTime(schedule.endTime!!)
+                )
             } else if (schedule.time != null) {
-                " at ${formatTime(schedule.time!!)}"
+                context.getString(R.string.schedule_at, formatTime(schedule.time!!))
             } else ""
             "$days$timeRange"
         }
 
-        RoutineSchedule.ScheduleType.MANUAL -> "Manual activation"
+        RoutineSchedule.ScheduleType.MANUAL -> context.getString(R.string.manual_activation)
     }
 }
 

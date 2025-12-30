@@ -13,6 +13,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.ServiceCompat
 import androidx.core.content.edit
+import androidx.core.net.toUri
 import dev.pranav.reef.R
 import dev.pranav.reef.TimerActivity
 import dev.pranav.reef.timer.PomodoroConfig
@@ -129,8 +130,8 @@ class FocusModeService: Service() {
         }
 
         return when (state.pomodoroPhase) {
-            PomodoroPhase.SHORT_BREAK -> "Short Break"
-            PomodoroPhase.LONG_BREAK -> "Long Break"
+            PomodoroPhase.SHORT_BREAK -> getString(R.string.short_break_label)
+            PomodoroPhase.LONG_BREAK -> getString(R.string.long_break_label)
             else -> getString(R.string.focus_mode)
         }
     }
@@ -378,7 +379,10 @@ class FocusModeService: Service() {
             setContentText(text)
             clearActions()
 
-            val action = if (showPauseButton) ACTION_PAUSE to "Pause" else ACTION_RESUME to "Resume"
+            val action =
+                if (showPauseButton) ACTION_PAUSE to getString(R.string.notification_pause) else ACTION_RESUME to getString(
+                    R.string.notification_resume
+                )
             val actionIntent = Intent(this@FocusModeService, FocusModeService::class.java).apply {
                 this.action = action.first
             }
@@ -415,7 +419,7 @@ class FocusModeService: Service() {
             val soundUri = if (soundUriString.isNullOrEmpty()) {
                 android.media.RingtoneManager.getDefaultUri(android.media.RingtoneManager.TYPE_NOTIFICATION)
             } else {
-                android.net.Uri.parse(soundUriString)
+                soundUriString.toUri()
             }
 
             val ringtone = android.media.RingtoneManager.getRingtone(applicationContext, soundUri)
@@ -428,18 +432,16 @@ class FocusModeService: Service() {
     private fun enableDNDIfNeeded() {
         if (!prefs.getBoolean("enable_dnd", false)) return
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (systemNotificationManager.isNotificationPolicyAccessGranted) {
-                previousInterruptionFilter = systemNotificationManager.currentInterruptionFilter
-                systemNotificationManager.setInterruptionFilter(
-                    NotificationManager.INTERRUPTION_FILTER_PRIORITY
-                )
-            }
+        if (systemNotificationManager.isNotificationPolicyAccessGranted) {
+            previousInterruptionFilter = systemNotificationManager.currentInterruptionFilter
+            systemNotificationManager.setInterruptionFilter(
+                NotificationManager.INTERRUPTION_FILTER_PRIORITY
+            )
         }
     }
 
     private fun restoreDND() {
-        if (previousInterruptionFilter != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        if (previousInterruptionFilter != null) {
             if (systemNotificationManager.isNotificationPolicyAccessGranted) {
                 systemNotificationManager.setInterruptionFilter(previousInterruptionFilter!!)
                 previousInterruptionFilter = null

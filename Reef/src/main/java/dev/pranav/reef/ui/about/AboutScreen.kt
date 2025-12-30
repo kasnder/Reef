@@ -1,7 +1,6 @@
 package dev.pranav.reef.ui.about
 
 import android.content.Intent
-import android.net.Uri
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -22,12 +21,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import dev.pranav.reef.BuildConfig
+import dev.pranav.reef.R
 import dev.pranav.reef.ui.icons.Discord
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -44,13 +45,16 @@ fun AboutScreen(
             LargeTopAppBar(
                 title = {
                     Text(
-                        "About",
+                        stringResource(R.string.about),
                         style = MaterialTheme.typography.headlineMedium
                     )
                 },
                 navigationIcon = {
                     IconButton(onClick = onBackPressed) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.back)
+                        )
                     }
                 },
                 scrollBehavior = scrollBehavior,
@@ -103,14 +107,14 @@ fun AppInfoCard() {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "Reef",
+            text = stringResource(R.string.app_name),
             style = MaterialTheme.typography.displayMediumEmphasized,
             color = MaterialTheme.colorScheme.onSurface,
             fontFamily = FontFamily.Cursive
         )
 
         Text(
-            text = "Version " + BuildConfig.VERSION_NAME,
+            text = stringResource(R.string.version_label, BuildConfig.VERSION_NAME),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onPrimaryContainer
         )
@@ -118,7 +122,7 @@ fun AppInfoCard() {
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = "Open source productivity app to help you reduce screen time and improve digital wellbeing",
+            text = stringResource(R.string.about_description),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
@@ -161,7 +165,7 @@ fun DeveloperCard() {
 
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Developer",
+                        text = stringResource(R.string.developer_label),
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -180,7 +184,7 @@ fun DeveloperCard() {
             ) {
                 Column(modifier = Modifier.padding(top = 16.dp)) {
                     Text(
-                        text = "Open source developer focused on building tools for productivity and security.",
+                        text = stringResource(R.string.developer_description),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
                     )
@@ -191,7 +195,7 @@ fun DeveloperCard() {
                         onClick = {
                             val intent = Intent(
                                 Intent.ACTION_VIEW,
-                                Uri.parse("https://github.com/PranavPurwar")
+                                "https://github.com/PranavPurwar".toUri()
                             )
                             context.startActivity(intent)
                         }
@@ -202,7 +206,7 @@ fun DeveloperCard() {
                             modifier = Modifier.size(18.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("View GitHub Profile")
+                        Text(stringResource(R.string.view_github_profile))
                     }
                 }
             }
@@ -243,7 +247,7 @@ fun SupportCard() {
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "Support Development",
+                text = stringResource(R.string.support_development),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onTertiaryContainer
@@ -252,7 +256,7 @@ fun SupportCard() {
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "Help keep this project maintained and growing",
+                text = stringResource(R.string.support_description_short),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onTertiaryContainer,
                 textAlign = TextAlign.Center
@@ -283,7 +287,7 @@ fun SupportCard() {
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    "Donate",
+                    stringResource(R.string.donate),
                     style = MaterialTheme.typography.headlineLargeEmphasized,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier
@@ -300,20 +304,20 @@ fun LinksSection() {
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
-            text = "Links",
+            text = stringResource(R.string.links_title),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(horizontal = 4.dp)
         )
 
         LinkCard(
-            title = "Discord Community",
+            title = stringResource(R.string.discord_community),
             icon = Discord,
             modifier = Modifier.fillMaxWidth(),
             onClick = {
                 val intent = Intent(
                     Intent.ACTION_VIEW,
-                    Uri.parse("https://discord.gg/46wCMRVAre")
+                    "https://discord.gg/46wCMRVAre".toUri()
                 )
                 context.startActivity(intent)
             }
@@ -324,26 +328,26 @@ fun LinksSection() {
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             LinkCard(
-                title = "Source Code",
+                title = stringResource(R.string.source_code),
                 icon = Icons.Outlined.Code,
                 modifier = Modifier.weight(1f),
                 onClick = {
                     val intent = Intent(
                         Intent.ACTION_VIEW,
-                        Uri.parse("https://github.com/PranavPurwar/Reef")
+                        "https://github.com/PranavPurwar/Reef".toUri()
                     )
                     context.startActivity(intent)
                 }
             )
 
             LinkCard(
-                title = "Report Issue",
+                title = stringResource(R.string.report_issue),
                 icon = Icons.Outlined.BugReport,
                 modifier = Modifier.weight(1f),
                 onClick = {
                     val intent = Intent(
                         Intent.ACTION_VIEW,
-                        Uri.parse("https://github.com/PranavPurwar/Reef/issues")
+                        "https://github.com/PranavPurwar/Reef/issues".toUri()
                     )
                     context.startActivity(intent)
                 }
@@ -388,7 +392,7 @@ fun LinkCard(
 @Composable
 fun FooterText() {
     Text(
-        text = "Free and Open Source Software",
+        text = stringResource(R.string.foss_label),
         style = MaterialTheme.typography.labelLarge,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         textAlign = TextAlign.Center,

@@ -25,6 +25,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
@@ -34,16 +36,23 @@ import androidx.core.graphics.drawable.toBitmap
 import com.patrykandpatrick.vico.core.cartesian.data.CartesianChartModelProducer
 import com.patrykandpatrick.vico.core.cartesian.data.CartesianValueFormatter
 import com.patrykandpatrick.vico.core.cartesian.data.columnSeries
+import dev.pranav.reef.R
 import org.nsh07.pomodoro.ui.statsScreen.TimeColumnChart
 
 
-private fun formatTime(timeInMillis: Long): String {
+private fun formatTime(context: android.content.Context, timeInMillis: Long): String {
     val hours = timeInMillis / 3_600_000
     val minutes = (timeInMillis % 3_600_000) / 60_000
     return when {
-        hours > 0 -> "${hours}h ${minutes}m"
-        minutes > 0 -> "${minutes}m"
-        else -> "< 1m"
+        hours > 0 && minutes > 0 -> context.getString(
+            R.string.hour_min_short_suffix,
+            hours,
+            minutes
+        )
+
+        hours > 0 -> context.getString(R.string.hours_short_format, hours)
+        minutes > 0 -> context.getString(R.string.minutes_short_format, minutes)
+        else -> context.getString(R.string.less_than_one_minute)
     }
 }
 
@@ -74,13 +83,16 @@ fun AppUsageScreen(
                 title = {
                     Column {
                         Text(
-                            "App Usage",
+                            stringResource(R.string.app_usage),
                             style = MaterialTheme.typography.headlineSmall
                         )
                         AnimatedVisibility(!isLoading) {
                             val count = appUsageStats.size
                             Text(
-                                "$count app${if (count == 1) "" else "s"} tracked",
+                                if (count == 1) stringResource(R.string.apps_tracked_one) else stringResource(
+                                    R.string.apps_tracked_multiple,
+                                    count
+                                ),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -89,26 +101,26 @@ fun AppUsageScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onBackPressed) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
                     }
                 },
                 actions = {
                     IconButton(onClick = { sortMenuExpanded = true }) {
-                        Icon(Icons.AutoMirrored.Filled.Sort, "Sort")
+                        Icon(Icons.AutoMirrored.Filled.Sort, stringResource(R.string.sort))
                     }
                     DropdownMenu(
                         expanded = sortMenuExpanded,
                         onDismissRequest = { sortMenuExpanded = false }
                     ) {
                         DropdownMenuItem(
-                            text = { Text("Sort by time") },
+                            text = { Text(stringResource(R.string.sort_by_time)) },
                             onClick = {
                                 viewModel.setSort(UsageSortOrder.TIME_DESC)
                                 sortMenuExpanded = false
                             }
                         )
                         DropdownMenuItem(
-                            text = { Text("Sort A–Z") },
+                            text = { Text(stringResource(R.string.sort_az)) },
                             onClick = {
                                 viewModel.setSort(UsageSortOrder.NAME_ASC)
                                 sortMenuExpanded = false
@@ -131,7 +143,7 @@ fun AppUsageScreen(
                 ) {
                     ContainedLoadingIndicator()
                     Spacer(Modifier.height(12.dp))
-                    Text("Fetching usage data...")
+                    Text(stringResource(R.string.fetching_usage_data))
                 }
             } else {
                 LazyColumn(
@@ -191,7 +203,7 @@ fun AppUsageScreen(
                                     .fillMaxWidth()
                                     .padding(vertical = 16.dp)
                             ) {
-                                Text("Show all ${appUsageStats.size} apps")
+                                Text(stringResource(R.string.show_all_apps, appUsageStats.size))
                             }
                         }
                     }
@@ -209,7 +221,8 @@ fun RangeButtonGroup(
     selectedRange: UsageRange,
     onSelectionChange: (UsageRange) -> Unit
 ) {
-    val options = listOf("Today", "7 Days")
+    val options =
+        listOf(stringResource(R.string.today), stringResource(R.string.last_7_days_option))
 
     val selectedIndex = if (selectedRange == UsageRange.TODAY) 0 else 1
 
@@ -259,6 +272,8 @@ private fun HeroHeader(
 ) {
     val modelProducer = remember { CartesianChartModelProducer() }
 
+    val resources = LocalResources.current
+
     LaunchedEffect(weeklyData) {
         modelProducer.runTransaction {
             columnSeries { series(weeklyData.map { (it.totalUsageHours * 60).toLong() }) }
@@ -275,9 +290,9 @@ private fun HeroHeader(
                 selectedDayIndex != null && selectedDayIndex in weeklyData.indices ->
                     weeklyData[selectedDayIndex].dayOfWeek
 
-                range == UsageRange.TODAY -> "Today"
-                range == UsageRange.LAST_7_DAYS -> "Last 7 days"
-                else -> "Today"
+                range == UsageRange.TODAY -> stringResource(R.string.today)
+                range == UsageRange.LAST_7_DAYS -> stringResource(R.string.last_7_days)
+                else -> stringResource(R.string.today)
             },
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.primary
@@ -290,7 +305,7 @@ private fun HeroHeader(
             label = "totalTime"
         ) { time ->
             Text(
-                formatTime(time),
+                formatTime(LocalContext.current, time),
                 style = MaterialTheme.typography.displaySmall,
                 fontWeight = FontWeight.ExtraBold
             )
@@ -307,10 +322,15 @@ private fun HeroHeader(
                     val hours = totalMinutes / 60
                     val minutes = totalMinutes % 60
                     when {
-                        hours > 0 && minutes > 0 -> "${hours}h ${minutes}m"
-                        hours > 0 -> "${hours}h"
-                        minutes > 0 -> "${minutes}m"
-                        else -> "0"
+                        hours > 0 && minutes > 0 -> resources.getString(
+                            R.string.hour_min_short_suffix,
+                            hours,
+                            minutes
+                        )
+
+                        hours > 0 -> resources.getString(R.string.hours_short_format, hours)
+                        minutes > 0 -> resources.getString(R.string.minutes_short_format, minutes)
+                        else -> resources.getString(R.string.zero_time)
                     }
                 },
                 xValueFormatter = CartesianValueFormatter { _, value, _ ->
@@ -351,7 +371,7 @@ private fun HeroHeader(
                 enabled = canGoPrevious
             ) {
                 Icon(
-                    Icons.Filled.ChevronLeft, "Previous Week",
+                    Icons.Filled.ChevronLeft, stringResource(R.string.previous_week),
                     tint = if (canGoPrevious)
                         MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant
                 )
@@ -361,7 +381,8 @@ private fun HeroHeader(
                 enabled = canGoNext
             ) {
                 Icon(
-                    Icons.Filled.ChevronRight, "Next Week",
+                    Icons.Filled.ChevronRight,
+                    stringResource(R.string.next_week),
                     tint = if (canGoNext) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant
                 )
             }
@@ -438,7 +459,7 @@ private fun AppUsageItem(
                 },
                 supportingContent = {
                     Text(
-                        formatTime(appUsageStats.totalTime),
+                        formatTime(LocalContext.current, appUsageStats.totalTime),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.primary
                     )
@@ -446,7 +467,10 @@ private fun AppUsageItem(
                 leadingContent = { icon?.let { UsageIconRing(it, animatedProgress) } },
                 trailingContent = {
                     Text(
-                        "${(animatedProgress * 100).toInt()}%",
+                        stringResource(
+                            R.string.percentage_format,
+                            (animatedProgress * 100).toInt()
+                        ),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -474,7 +498,7 @@ private fun UsageIconRing(icon: androidx.compose.ui.graphics.ImageBitmap, progre
             strokeWidth = 3.dp
         )
         Image(
-            icon, "App icon", Modifier
+            icon, stringResource(R.string.app_icon), Modifier
                 .size(46.dp)
                 .clip(CircleShape)
         )

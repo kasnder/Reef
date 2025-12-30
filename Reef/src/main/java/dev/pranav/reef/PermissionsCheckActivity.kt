@@ -2,7 +2,6 @@ package dev.pranav.reef
 
 import android.Manifest
 import android.content.Intent
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
@@ -20,10 +19,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
+import androidx.core.net.toUri
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import dev.pranav.reef.ui.ReefTheme
@@ -53,7 +53,7 @@ class PermissionsCheckActivity: ComponentActivity() {
 @Composable
 fun PermissionsScreen(onBackClick: () -> Unit) {
     val context = LocalContext.current
-    val lifecycleOwner = LocalLifecycleOwner.current
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
     var permissions by remember { mutableStateOf(emptyList<PermissionStatus>()) }
 
     // Refresh permissions on resume
@@ -72,10 +72,13 @@ fun PermissionsScreen(onBackClick: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Required Permissions") },
+                title = { Text(stringResource(R.string.required_permissions)) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            Icons.AutoMirrored.Rounded.ArrowBack,
+                            contentDescription = stringResource(R.string.back)
+                        )
                     }
                 }
             )
@@ -90,7 +93,7 @@ fun PermissionsScreen(onBackClick: () -> Unit) {
         ) {
             item {
                 Text(
-                    text = "To ensure Reef works correctly, please grant the following permissions.",
+                    text = stringResource(R.string.permissions_description),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(vertical = 8.dp)
@@ -123,7 +126,7 @@ fun PermissionsScreen(onBackClick: () -> Unit) {
                             PermissionType.BATTERY_OPTIMIZATION -> {
                                 val intent =
                                     Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
-                                intent.data = Uri.parse("package:${context.packageName}")
+                                intent.data = "package:${context.packageName}".toUri()
                                 context.startActivity(intent)
                             }
                         }
@@ -167,7 +170,7 @@ fun PermissionItem(
                 if (permission.isGranted) {
                     Icon(
                         imageVector = Icons.Rounded.CheckCircle,
-                        contentDescription = "Granted",
+                        contentDescription = stringResource(R.string.granted),
                         tint = MaterialTheme.colorScheme.primary
                     )
                 }
@@ -187,7 +190,7 @@ fun PermissionItem(
                     onClick = onGrantClick,
                     modifier = Modifier.align(Alignment.End)
                 ) {
-                    Text("Grant")
+                    Text(stringResource(R.string.grant))
                 }
             }
         }

@@ -7,20 +7,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -34,47 +21,14 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.outlined.AccessTime
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.ButtonGroupDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.LargeTopAppBar
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedCard
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TimePicker
-import androidx.compose.material3.ToggleButton
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.rememberModalBottomSheetState
-import androidx.compose.material3.rememberTimePickerState
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -95,7 +49,7 @@ import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.UUID
 
-class CreateRoutineActivity : ComponentActivity() {
+class CreateRoutineActivity: ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         applyDefaults()
 
@@ -163,13 +117,16 @@ fun CreateRoutineScreen(
             LargeTopAppBar(
                 title = {
                     Text(
-                        if (currentRoutine != null) "Edit Routine"
+                        if (currentRoutine != null) stringResource(R.string.edit_routine)
                         else stringResource(R.string.create_routine)
                     )
                 },
                 navigationIcon = {
                     IconButton(onClick = onBackPressed) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.back)
+                        )
                     }
                 },
                 scrollBehavior = scrollBehavior
@@ -453,7 +410,7 @@ fun CreateRoutineScreen(
             initialTime = selectedTime,
             onTimeSelected = { selectedTime = it },
             onDismiss = { showTimePicker = false },
-            title = "Start Time"
+            title = stringResource(R.string.start_time)
         )
     }
 
@@ -462,7 +419,7 @@ fun CreateRoutineScreen(
             initialTime = selectedEndTime,
             onTimeSelected = { selectedEndTime = it },
             onDismiss = { showEndTimePicker = false },
-            title = "End Time"
+            title = stringResource(R.string.end_time)
         )
     }
 
@@ -482,7 +439,12 @@ fun CreateRoutineScreen(
             onDismissRequest = { showDeleteDialog = false },
             title = { Text(stringResource(R.string.delete_routine)) },
             text = {
-                Text("Are you sure you want to delete '${currentRoutine?.name}'? This action cannot be undone.")
+                Text(
+                    stringResource(
+                        R.string.delete_routine_confirmation,
+                        currentRoutine?.name ?: ""
+                    )
+                )
             },
             confirmButton = {
                 TextButton(
@@ -493,12 +455,12 @@ fun CreateRoutineScreen(
                         onSaveComplete()
                     }
                 ) {
-                    Text("Delete")
+                    Text(stringResource(R.string.delete))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteDialog = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.cancel))
                 }
             }
         )
@@ -557,7 +519,7 @@ fun AppLimitItem(
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = formatLimitTime(appLimit.limitMinutes),
+                    text = formatLimitTime(appLimit.limitMinutes, context),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -569,7 +531,7 @@ fun AppLimitItem(
             ) {
                 Icon(
                     Icons.Default.Close,
-                    contentDescription = "Remove app limit",
+                    contentDescription = stringResource(R.string.remove_app_limit),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
@@ -600,12 +562,12 @@ fun TimePickerDialog(
                     onDismiss()
                 }
             ) {
-                Text("OK")
+                Text(stringResource(R.string.ok))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(R.string.cancel))
             }
         },
         title = { Text(title) },
@@ -663,7 +625,7 @@ fun AppSelectorDialog(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Text(
-                text = "Select App",
+                text = stringResource(R.string.select_app),
                 style = MaterialTheme.typography.headlineSmall,
                 modifier = Modifier.fillMaxWidth(),
                 textAlign = TextAlign.Center
@@ -672,7 +634,7 @@ fun AppSelectorDialog(
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
-                label = { Text("Search apps") },
+                label = { Text(stringResource(R.string.search_apps)) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 shape = RoundedCornerShape(16.dp),
@@ -693,7 +655,9 @@ fun AppSelectorDialog(
                 }
             } else if (filteredApps.isEmpty()) {
                 Text(
-                    text = if (searchQuery.isBlank()) "No apps found" else "No apps match your search",
+                    text = if (searchQuery.isBlank()) stringResource(R.string.no_apps_found) else stringResource(
+                        R.string.no_apps_match
+                    ),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier
@@ -729,16 +693,16 @@ fun AppSelectorDialog(
         val (packageName, appName) = selectedApp!!
         AlertDialog(
             onDismissRequest = { selectedApp = null },
-            title = { Text("Set limit for $appName") },
+            title = { Text(stringResource(R.string.set_limit_for, appName)) },
             text = {
                 Column {
                     listOf(
-                        "0 minutes" to 0,
-                        "15 minutes" to 15,
-                        "30 minutes" to 30,
-                        "1 hour" to 60,
-                        "2 hours" to 120,
-                        "3 hours" to 180
+                        pluralStringResource(R.plurals.minutes_label, 0) to 0,
+                        pluralStringResource(R.plurals.minutes_label, 15) to 15,
+                        pluralStringResource(R.plurals.minutes_label, 30) to 30,
+                        stringResource(R.string.hour_label) to 60,
+                        pluralStringResource(R.plurals.hours_label, 2) to 120,
+                        pluralStringResource(R.plurals.hours_label, 3) to 180
                     ).forEach { (label, minutes) ->
                         TextButton(
                             onClick = {
@@ -755,7 +719,7 @@ fun AppSelectorDialog(
             confirmButton = {},
             dismissButton = {
                 TextButton(onClick = { selectedApp = null }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.cancel))
                 }
             }
         )
@@ -767,11 +731,11 @@ private fun formatTime(time: LocalTime): String {
     return time.format(formatter)
 }
 
-private fun formatLimitTime(minutes: Int): String {
+private fun formatLimitTime(minutes: Int, context: android.content.Context): String {
     return when {
-        minutes < 60 -> "${minutes}m"
-        minutes % 60 == 0 -> "${minutes / 60}h"
-        else -> "${minutes / 60}h ${minutes % 60}m"
+        minutes < 60 -> context.getString(R.string.minutes_short_format, minutes)
+        minutes % 60 == 0 -> context.getString(R.string.hours_short_format, minutes / 60)
+        else -> context.getString(R.string.hour_min_short_suffix, minutes / 60, minutes % 60)
     }
 }
 
@@ -787,7 +751,7 @@ private fun saveRoutine(
     onError: (String) -> Unit
 ): Boolean {
     if (name.trim().isEmpty()) {
-        onError("Please enter a routine name")
+        onError(context.getString(R.string.enter_routine_name_error))
         return false
     }
 

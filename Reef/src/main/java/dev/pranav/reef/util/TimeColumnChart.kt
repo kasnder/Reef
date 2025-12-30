@@ -14,11 +14,7 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MaterialTheme.motionScheme
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
@@ -53,8 +49,8 @@ internal fun TimeColumnChart(
     modifier: Modifier = Modifier,
     thickness: Dp = 20.dp,
     columnCollectionSpacing: Dp = 28.dp,
-    xValueFormatter: CartesianValueFormatter = CartesianValueFormatter.Default,
-    yValueFormatter: CartesianValueFormatter = CartesianValueFormatter.Default,
+    xValueFormatter: CartesianValueFormatter = CartesianValueFormatter.decimal(),
+    yValueFormatter: CartesianValueFormatter = CartesianValueFormatter.decimal(),
     animationSpec: AnimationSpec<Float>? = motionScheme.slowEffectsSpec(),
     onColumnClick: ((Int) -> Unit)? = null,
     dataValues: List<Float> = emptyList(),
@@ -75,7 +71,7 @@ internal fun TimeColumnChart(
                 rememberCartesianChart(
                     rememberColumnCartesianLayer(
                         ColumnCartesianLayer.ColumnProvider.series(
-                            dataValues.indices.map { index ->
+                            dataValues.indices.map { _ ->
                                 rememberLineComponent(
                                     fill = fill(primaryColor),
                                     thickness = thickness,
@@ -145,7 +141,7 @@ internal fun TimeColumnChart(
                                 val clickX = offset.x - startAxisWidth
                                 val clickY = offset.y - topPadding
 
-                                if (clickX >= 0 && clickX <= availableWidth && clickY >= 0 && clickY <= availableHeight) {
+                                if (clickX in 0.0f..availableWidth && clickY >= 0 && clickY <= availableHeight) {
                                     val columnIndex = (clickX / totalColumnWidth).toInt()
                                     if (columnIndex >= 0 && columnIndex < dataValues.size) {
                                         val maxValue = dataValues.maxOrNull() ?: 1f
@@ -154,7 +150,7 @@ internal fun TimeColumnChart(
                                         val barHeight = availableHeight * barHeightRatio
                                         val barTop = availableHeight - barHeight
 
-                                        if (clickY >= barTop && clickY <= availableHeight) {
+                                        if (clickY in barTop..availableHeight) {
                                             onColumnClick(columnIndex)
                                         }
                                     }

@@ -20,6 +20,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -103,13 +105,16 @@ fun DailyLimitScreen(
             TopAppBar(
                 title = {
                     Text(
-                        "Daily Usage Limit",
+                        stringResource(R.string.daily_usage_limit),
                         style = MaterialTheme.typography.titleLarge
                     )
                 },
                 navigationIcon = {
                     IconButton(onClick = onBackPressed) {
-                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            Icons.AutoMirrored.Rounded.ArrowBack,
+                            contentDescription = stringResource(R.string.back)
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -194,7 +199,7 @@ fun DailyLimitContent(
             )
 
             Text(
-                text = "Set daily usage limit",
+                text = stringResource(R.string.set_daily_usage_limit),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -229,7 +234,11 @@ fun DailyLimitContent(
                         pressedShape = IconButtonDefaults.largePressedShape
                     )
                 ) {
-                    Icon(Icons.Rounded.Add, "Increase Hours", modifier = Modifier.size(20.dp))
+                    Icon(
+                        Icons.Rounded.Add,
+                        stringResource(R.string.increase_hours),
+                        modifier = Modifier.size(20.dp)
+                    )
                 }
                 Spacer(Modifier.width(100.dp))
                 FilledTonalIconButton(
@@ -244,7 +253,11 @@ fun DailyLimitContent(
                         pressedShape = IconButtonDefaults.largePressedShape
                     )
                 ) {
-                    Icon(Icons.Rounded.Add, "Increase Minutes", modifier = Modifier.size(20.dp))
+                    Icon(
+                        Icons.Rounded.Add,
+                        stringResource(R.string.increase_minutes),
+                        modifier = Modifier.size(20.dp)
+                    )
                 }
             }
 
@@ -292,7 +305,11 @@ fun DailyLimitContent(
                         pressedShape = IconButtonDefaults.largePressedShape
                     )
                 ) {
-                    Icon(Icons.Rounded.Remove, "Decrease Hours", modifier = Modifier.size(20.dp))
+                    Icon(
+                        Icons.Rounded.Remove,
+                        stringResource(R.string.decrease_hours),
+                        modifier = Modifier.size(20.dp)
+                    )
                 }
                 Spacer(Modifier.width(100.dp))
                 FilledTonalIconButton(
@@ -307,7 +324,11 @@ fun DailyLimitContent(
                         pressedShape = IconButtonDefaults.largePressedShape
                     )
                 ) {
-                    Icon(Icons.Rounded.Remove, "Decrease Minutes", modifier = Modifier.size(20.dp))
+                    Icon(
+                        Icons.Rounded.Remove,
+                        stringResource(R.string.decrease_minutes),
+                        modifier = Modifier.size(20.dp)
+                    )
                 }
             }
 
@@ -318,8 +339,8 @@ fun DailyLimitContent(
                 modifier = Modifier.fillMaxWidth(0.75f),
                 horizontalArrangement = Arrangement.SpaceAround
             ) {
-                Text("Hours", style = MaterialTheme.typography.titleMedium)
-                Text("Minutes", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.hours), style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.minutes), style = MaterialTheme.typography.titleMedium)
             }
         }
 
@@ -330,11 +351,21 @@ fun DailyLimitContent(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
         ) {
-            AssistChip(onClick = { hours = 0; minutes = 15 }, label = { Text("15m") })
-            AssistChip(onClick = { hours = 0; minutes = 30 }, label = { Text("30m") })
-            AssistChip(onClick = { hours = 1; minutes = 0 }, label = { Text("1h") })
-            AssistChip(onClick = { hours = 2; minutes = 0 }, label = { Text("2h") })
-            AssistChip(onClick = { hours = 3; minutes = 0 }, label = { Text("3h") })
+            AssistChip(
+                onClick = { hours = 0; minutes = 15 },
+                label = { Text(pluralStringResource(R.plurals.minutes_label, 15)) })
+            AssistChip(
+                onClick = { hours = 0; minutes = 30 },
+                label = { Text(pluralStringResource(R.plurals.minutes_label, 30)) })
+            AssistChip(
+                onClick = { hours = 1; minutes = 0 },
+                label = { Text(stringResource(R.string.hour_label)) })
+            AssistChip(
+                onClick = { hours = 2; minutes = 0 },
+                label = { Text(pluralStringResource(R.plurals.hours_label, 2)) })
+            AssistChip(
+                onClick = { hours = 3; minutes = 0 },
+                label = { Text(pluralStringResource(R.plurals.hours_label, 3)) })
         }
 
         Spacer(modifier = Modifier.height(20.dp))
@@ -357,7 +388,7 @@ fun DailyLimitContent(
                 )
             ) {
                 Text(
-                    text = "Set Limit",
+                    text = stringResource(R.string.set_limit),
                     style = MaterialTheme.typography.labelLargeEmphasized
                 )
             }
@@ -368,7 +399,7 @@ fun DailyLimitContent(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
-                        text = "Remove Limit",
+                        text = stringResource(R.string.remove_limit),
                         color = MaterialTheme.colorScheme.error
                     )
                 }
@@ -397,7 +428,7 @@ fun UsageGraphCard(
                 .padding(20.dp)
         ) {
             Text(
-                text = "Usage History",
+                text = stringResource(R.string.usage_history),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold
             )
@@ -407,7 +438,7 @@ fun UsageGraphCard(
             val totalUsage = dailyData.sumOf { it.usageMinutes }
             val avgUsage = if (dailyData.isNotEmpty()) totalUsage / dailyData.size else 0.0
             Text(
-                text = "${avgUsage.toInt()} min/day average",
+                text = stringResource(R.string.min_day_average, avgUsage.toInt()),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

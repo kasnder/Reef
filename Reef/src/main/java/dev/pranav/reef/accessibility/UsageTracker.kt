@@ -112,7 +112,7 @@ object UsageTracker {
             } else {
                 false
             }
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             false
         }
 

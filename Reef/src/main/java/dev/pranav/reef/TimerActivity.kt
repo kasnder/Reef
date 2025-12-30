@@ -7,6 +7,7 @@ import android.content.IntentFilter
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.AnimatedContent
@@ -25,7 +26,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
@@ -225,14 +227,17 @@ fun FocusTimerScreen(
             TopAppBar(
                 title = {
                     Text(
-                        "Focus Mode",
+                        stringResource(R.string.focus_mode_title),
                         style = MaterialTheme.typography.headlineLarge
                     )
                 },
                 navigationIcon = {
                     if (!isStrictMode) {
                         IconButton(onClick = onBackPressed) {
-                            Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
+                            Icon(
+                                Icons.AutoMirrored.Rounded.ArrowBack,
+                                contentDescription = stringResource(R.string.back)
+                            )
                         }
                     }
                 },
@@ -257,7 +262,7 @@ fun FocusTimerScreen(
                 label = "timer_state"
             ) { running ->
                 if (running) {
-                    val context = LocalContext.current as TimerActivity
+                    val context = LocalActivity.current as TimerActivity
                     RunningTimerView(
                         timeLeft = currentTimeLeft,
                         timerState = currentTimerState,
@@ -342,7 +347,7 @@ fun FocusModeGroup(
     selectedMode: Int,
     onSelectionChange: (Int) -> Unit
 ) {
-    val modes = listOf("Timer", "Pomodoro")
+    val modes = listOf(stringResource(R.string.timer_tab), stringResource(R.string.pomodoro_tab))
 
     FlowRow(
         Modifier
@@ -409,7 +414,7 @@ fun SimpleFocusSetup(onStart: (TimerConfig) -> Unit) {
                         pressedShape = IconButtonDefaults.largePressedShape
                     )
                 ) {
-                    Icon(Icons.Rounded.Add, "Increase Hours")
+                    Icon(Icons.Rounded.Add, stringResource(R.string.increase_hours))
                 }
                 Spacer(Modifier.width(120.dp))
                 FilledTonalIconButton(
@@ -424,7 +429,7 @@ fun SimpleFocusSetup(onStart: (TimerConfig) -> Unit) {
                         pressedShape = IconButtonDefaults.largePressedShape
                     )
                 ) {
-                    Icon(Icons.Rounded.Add, "Increase Minutes")
+                    Icon(Icons.Rounded.Add, stringResource(R.string.increase_minutes))
                 }
             }
 
@@ -472,7 +477,7 @@ fun SimpleFocusSetup(onStart: (TimerConfig) -> Unit) {
                         pressedShape = IconButtonDefaults.largePressedShape
                     )
                 ) {
-                    Icon(Icons.Rounded.Remove, "Decrease Hours")
+                    Icon(Icons.Rounded.Remove, stringResource(R.string.decrease_hours))
                 }
                 Spacer(Modifier.width(120.dp))
                 FilledTonalIconButton(
@@ -487,7 +492,7 @@ fun SimpleFocusSetup(onStart: (TimerConfig) -> Unit) {
                         pressedShape = IconButtonDefaults.largePressedShape
                     )
                 ) {
-                    Icon(Icons.Rounded.Remove, "Decrease Minutes")
+                    Icon(Icons.Rounded.Remove, stringResource(R.string.decrease_minutes))
                 }
             }
 
@@ -498,8 +503,8 @@ fun SimpleFocusSetup(onStart: (TimerConfig) -> Unit) {
                 modifier = Modifier.fillMaxWidth(0.8f),
                 horizontalArrangement = Arrangement.SpaceAround
             ) {
-                Text("Hours", style = MaterialTheme.typography.titleMedium)
-                Text("Minutes", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.hours), style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.minutes), style = MaterialTheme.typography.titleMedium)
             }
         }
 
@@ -525,12 +530,16 @@ fun SimpleFocusSetup(onStart: (TimerConfig) -> Unit) {
                 )
                 Column {
                     Text(
-                        text = if (isStrictMode) "Strict Mode" else "Flexible Mode",
+                        text = if (isStrictMode) stringResource(R.string.strict_mode) else stringResource(
+                            R.string.flexible_mode
+                        ),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold
                     )
                     Text(
-                        text = if (isStrictMode) "No pausing allowed" else "Pause & resume anytime",
+                        text = if (isStrictMode) stringResource(R.string.no_pausing_allowed) else stringResource(
+                            R.string.pause_resume_anytime
+                        ),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -548,11 +557,27 @@ fun SimpleFocusSetup(onStart: (TimerConfig) -> Unit) {
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
         ) {
-            AssistChip(onClick = { hours = 0; minutes = 5 }, label = { Text("5m") })
-            AssistChip(onClick = { hours = 0; minutes = 15 }, label = { Text("15m") })
-            AssistChip(onClick = { hours = 0; minutes = 30 }, label = { Text("30m") })
-            AssistChip(onClick = { hours = 1; minutes = 0 }, label = { Text("1h") })
-            AssistChip(onClick = { hours = 1; minutes = 30 }, label = { Text("1h 30m") })
+            AssistChip(
+                onClick = { hours = 0; minutes = 5 },
+                label = { Text(pluralStringResource(R.plurals.minutes_label, 5)) })
+            AssistChip(
+                onClick = { hours = 0; minutes = 15 },
+                label = { Text(pluralStringResource(R.plurals.minutes_label, 15)) })
+            AssistChip(
+                onClick = { hours = 0; minutes = 30 },
+                label = { Text(pluralStringResource(R.plurals.minutes_label, 30)) })
+            AssistChip(
+                onClick = { hours = 1; minutes = 0 },
+                label = { Text(stringResource(R.string.hour_label)) })
+            AssistChip(
+                onClick = { hours = 2; minutes = 0 },
+                label = { Text(pluralStringResource(R.plurals.hours_label, 2)) })
+            AssistChip(
+                onClick = { hours = 3; minutes = 0 },
+                label = { Text(pluralStringResource(R.plurals.hours_label, 3)) })
+            AssistChip(
+                onClick = { hours = 1; minutes = 30 },
+                label = { Text(stringResource(R.string.hour_min_short_suffix, 1, 30)) })
         }
 
         Spacer(modifier = Modifier.height(32.dp))
@@ -577,7 +602,7 @@ fun SimpleFocusSetup(onStart: (TimerConfig) -> Unit) {
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = "Start",
+                text = stringResource(R.string.start),
                 style = MaterialTheme.typography.titleLarge
             )
         }
@@ -619,19 +644,19 @@ fun PomodoroFocusSetup(onStart: (TimerConfig) -> Unit) {
             ) {
                 ExpressiveCounter(
                     modifier = Modifier.weight(1f),
-                    label = "Focus",
+                    label = stringResource(R.string.focus_label),
                     value = focusMinutes,
                     onValueChange = { focusMinutes = it },
                     range = 1..120,
-                    suffix = "m"
+                    suffix = stringResource(R.string.min_short_suffix)
                 )
                 ExpressiveCounter(
                     modifier = Modifier.weight(1f),
-                    label = "Short Break",
+                    label = stringResource(R.string.short_break_label),
                     value = shortBreakMinutes,
                     onValueChange = { shortBreakMinutes = it },
                     range = 1..30,
-                    suffix = "m"
+                    suffix = stringResource(R.string.min_short_suffix)
                 )
             }
 
@@ -641,15 +666,15 @@ fun PomodoroFocusSetup(onStart: (TimerConfig) -> Unit) {
             ) {
                 ExpressiveCounter(
                     modifier = Modifier.weight(1f),
-                    label = "Long Break",
+                    label = stringResource(R.string.long_break_label),
                     value = longBreakMinutes,
                     onValueChange = { longBreakMinutes = it },
                     range = 1..60,
-                    suffix = "m"
+                    suffix = stringResource(R.string.min_short_suffix)
                 )
                 ExpressiveCounter(
                     modifier = Modifier.weight(1f),
-                    label = "Cycles",
+                    label = stringResource(R.string.cycles_label),
                     value = cycles,
                     onValueChange = { cycles = it },
                     range = 1..10,
@@ -676,12 +701,16 @@ fun PomodoroFocusSetup(onStart: (TimerConfig) -> Unit) {
                 )
                 Column {
                     Text(
-                        text = if (isStrictMode) "Strict Mode" else "Flexible Mode",
+                        text = if (isStrictMode) stringResource(R.string.strict_mode) else stringResource(
+                            R.string.flexible_mode
+                        ),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold
                     )
                     Text(
-                        text = if (isStrictMode) "No pausing allowed" else "Pause & resume anytime",
+                        text = if (isStrictMode) stringResource(R.string.no_pausing_allowed) else stringResource(
+                            R.string.pause_resume_anytime
+                        ),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -723,7 +752,7 @@ fun PomodoroFocusSetup(onStart: (TimerConfig) -> Unit) {
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = "Start Pomodoro",
+                text = stringResource(R.string.start_pomodoro),
                 style = MaterialTheme.typography.titleLarge
             )
         }
@@ -767,14 +796,14 @@ fun ExpressiveCounter(
                 modifier = Modifier.size(40.dp),
                 shapes = IconButtonDefaults.shapes()
             ) {
-                Icon(Icons.Rounded.Remove, "Decrease")
+                Icon(Icons.Rounded.Remove, stringResource(R.string.decrease))
             }
             FilledTonalIconButton(
                 onClick = { if (value < range.last) onValueChange(value + 1) },
                 modifier = Modifier.size(40.dp),
                 shapes = IconButtonDefaults.shapes()
             ) {
-                Icon(Icons.Rounded.Add, "Increase")
+                Icon(Icons.Rounded.Add, stringResource(R.string.increase))
             }
         }
     }
@@ -818,7 +847,7 @@ fun RunningTimerView(
                         onClick = { },
                         label = {
                             Text(
-                                text = "Pomodoro",
+                                text = stringResource(R.string.pomodoro_tab),
                                 style = MaterialTheme.typography.labelMedium
                             )
                         },
@@ -836,7 +865,11 @@ fun RunningTimerView(
                             onClick = { },
                             label = {
                                 Text(
-                                    text = "Cycle $currentCycle/$totalCycles",
+                                    text = stringResource(
+                                        R.string.cycle_count,
+                                        currentCycle,
+                                        totalCycles
+                                    ),
                                     style = MaterialTheme.typography.labelMedium
                                 )
                             }
@@ -846,10 +879,10 @@ fun RunningTimerView(
             }
 
             val stateText = when (timerState) {
-                "FOCUS" -> "Focus"
-                "SHORT_BREAK" -> "Short Break"
-                "LONG_BREAK" -> "Long Break"
-                else -> "Focus"
+                "FOCUS" -> stringResource(R.string.focus_label)
+                "SHORT_BREAK" -> stringResource(R.string.short_break_label)
+                "LONG_BREAK" -> stringResource(R.string.long_break_label)
+                else -> stringResource(R.string.focus_label)
             }
 
             val isBreak = timerState == "SHORT_BREAK" || timerState == "LONG_BREAK"
@@ -886,7 +919,7 @@ fun RunningTimerView(
 
             if (isStrictMode) {
                 Text(
-                    text = "Strict Mode",
+                    text = stringResource(R.string.strict_mode),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.error,
                     fontWeight = FontWeight.SemiBold,
@@ -894,7 +927,7 @@ fun RunningTimerView(
                 )
             } else if (isPaused) {
                 Text(
-                    text = "Paused",
+                    text = stringResource(R.string.paused_status),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.tertiary,
                     fontWeight = FontWeight.SemiBold,
@@ -902,7 +935,7 @@ fun RunningTimerView(
                 )
             } else if (isBreak) {
                 Text(
-                    text = "Take a break, apps are unblocked",
+                    text = stringResource(R.string.take_a_break_message),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
@@ -915,18 +948,18 @@ fun RunningTimerView(
 
         if (!isStrictMode) {
             RunningTimerActions(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth(0.95f),
                 isPaused = isPaused,
                 onPause = onPause,
                 onResume = onResume,
                 onCancel = onCancel,
-                onRestart = onRestart,
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth(0.95f)
+                onRestart = onRestart
             )
         } else {
             Text(
-                text = "No interruptions allowed",
+                text = stringResource(R.string.no_interruptions_message),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
@@ -941,12 +974,12 @@ fun RunningTimerView(
 @ExperimentalMaterial3ExpressiveApi
 @Composable
 fun RunningTimerActions(
+    modifier: Modifier = Modifier,
     isPaused: Boolean,
     onPause: () -> Unit,
     onResume: () -> Unit,
     onCancel: () -> Unit,
     onRestart: () -> Unit = {},
-    modifier: Modifier = Modifier
 ) {
     Row(
         modifier = modifier.padding(horizontal = 24.dp),
@@ -972,7 +1005,9 @@ fun RunningTimerActions(
                     .fillMaxSize()
                     .padding(9.dp),
                 imageVector = if (isPaused) Icons.Rounded.PlayArrow else Icons.Rounded.Pause,
-                contentDescription = if (isPaused) "Resume" else "Pause"
+                contentDescription = if (isPaused) stringResource(R.string.resume) else stringResource(
+                    R.string.pause
+                )
             )
         }
 
@@ -985,7 +1020,7 @@ fun RunningTimerActions(
             shapes = ButtonDefaults.shapes(),
         ) {
             Text(
-                text = "Cancel",
+                text = stringResource(R.string.cancel),
                 style = MaterialTheme.typography.titleLargeEmphasized
             )
         }
@@ -1002,61 +1037,5 @@ fun RunningTimerActions(
                 style = MaterialTheme.typography.headlineSmall
             )
         }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun TimerSetupViewPreview() {
-    ReefTheme {
-        FocusTimerSetupView(onStart = { _ -> })
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun RunningTimerViewPreview() {
-    ReefTheme {
-        RunningTimerView(
-            timeLeft = "24:59",
-            timerState = "FOCUS",
-            isPaused = false,
-            isStrictMode = false,
-            onPause = {},
-            onResume = {},
-            onCancel = {}
-        )
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun RunningTimerViewPausedPreview() {
-    ReefTheme {
-        RunningTimerView(
-            timeLeft = "24:59",
-            timerState = "FOCUS",
-            isPaused = true,
-            isStrictMode = false,
-            onPause = {},
-            onResume = {},
-            onCancel = {}
-        )
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun RunningTimerViewStrictModePreview() {
-    ReefTheme {
-        RunningTimerView(
-            timeLeft = "24:59",
-            timerState = "FOCUS",
-            isPaused = false,
-            isStrictMode = true,
-            onPause = {},
-            onResume = {},
-            onCancel = {}
-        )
     }
 }

@@ -27,7 +27,7 @@ fun Activity.showAccessibilityDialog() {
                 if (!isAccessibilityServiceEnabledForBlocker()) {
                     Toast.makeText(
                         this,
-                        "You cannot use Reef without accessibility service enabled",
+                        R.string.accessibility_error_toast,
                         Toast.LENGTH_LONG
                     ).show()
                 }

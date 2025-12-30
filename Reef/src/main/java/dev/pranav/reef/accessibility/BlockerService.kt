@@ -69,13 +69,17 @@ class BlockerService: AccessibilityService() {
         }
 
         val contentText = when (reason) {
-            UsageTracker.BlockReason.ROUTINE_LIMIT -> "$appName is blocked by your active routine"
-            else -> "$appName has reached its limit"
+            UsageTracker.BlockReason.ROUTINE_LIMIT -> getString(
+                R.string.blocked_by_routine,
+                appName
+            )
+
+            else -> getString(R.string.reached_limit, appName)
         }
 
         val notification = NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.round_hourglass_disabled_24)
-            .setContentTitle("App blocked")
+            .setContentTitle(getString(R.string.app_blocked))
             .setContentText(contentText)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
@@ -99,8 +103,8 @@ class BlockerService: AccessibilityService() {
 
         val notification = NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.round_hourglass_disabled_24)
-            .setContentTitle("Distraction Blocked")
-            .setContentText("You were using $appName")
+            .setContentTitle(getString(R.string.distraction_blocked))
+            .setContentText(getString(R.string.you_were_using, appName))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
             .build()
