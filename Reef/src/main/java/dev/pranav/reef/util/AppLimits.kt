@@ -31,6 +31,8 @@ object AppLimits {
 
     fun hasLimit(pkg: String): Boolean = limits.containsKey(pkg)
 
+    fun getLimitedAppsCount(): Int = limits.size
+
     fun removeLimit(pkg: String) {
         limits.remove(pkg)
     }
@@ -134,6 +136,20 @@ object Whitelist {
 
     fun unwhitelist(packageName: String) {
         sharedPreferences.edit { putBoolean(packageName, false) }
+    }
+
+    fun getWhitelistedCount(): Int {
+        return sharedPreferences.all.count { it.value == true }
+    }
+
+    fun getWhitelistedLaunchableCount(launcherApps: android.content.pm.LauncherApps): Int {
+        val launchablePackages =
+            launcherApps.getActivityList(null, android.os.Process.myUserHandle())
+                .map { it.applicationInfo.packageName }
+                .toSet()
+        return sharedPreferences.all.count { (pkg, isWhitelisted) ->
+            isWhitelisted == true && launchablePackages.contains(pkg)
+        }
     }
 
     val allowedApps = hashSetOf(

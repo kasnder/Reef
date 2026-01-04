@@ -126,6 +126,10 @@ class MainActivity: ComponentActivity() {
 
             var slideProgress by remember { mutableFloatStateOf(0f) }
 
+            val whitelistedCount = remember {
+                Whitelist.getWhitelistedLaunchableCount(launcherApps)
+            }
+
             val selectedNavIndex = remember(currentDestination) {
                 when {
                     currentDestination?.hasRoute<Screen.Home>() == true -> 0
@@ -197,23 +201,36 @@ class MainActivity: ComponentActivity() {
                                     onItemSelected = { index ->
                                         when (index) {
                                             0 -> navController.navigate(Screen.Home) {
-                                                popUpTo(Screen.Home) { inclusive = true }
+                                                popUpTo(Screen.Home) {
+                                                    inclusive = true
+                                                    saveState = true
+                                                }
                                                 launchSingleTop = true
+                                                restoreState = true
                                             }
 
                                             1 -> navController.navigate(Screen.Usage) {
-                                                popUpTo(Screen.Home)
+                                                popUpTo(Screen.Home) {
+                                                    saveState = true
+                                                }
                                                 launchSingleTop = true
+                                                restoreState = true
                                             }
 
                                             2 -> navController.navigate(Screen.Timer) {
-                                                popUpTo(Screen.Home)
+                                                popUpTo(Screen.Home) {
+                                                    saveState = true
+                                                }
                                                 launchSingleTop = true
+                                                restoreState = true
                                             }
 
                                             3 -> navController.navigate(Screen.Settings) {
-                                                popUpTo(Screen.Home)
+                                                popUpTo(Screen.Home) {
+                                                    saveState = true
+                                                }
                                                 launchSingleTop = true
+                                                restoreState = true
                                             }
                                         }
                                     }
@@ -257,7 +274,8 @@ class MainActivity: ComponentActivity() {
                                         slideProgress = progress
                                     },
                                     currentTimeLeft = currentTimeLeft,
-                                    currentTimerState = currentTimerState
+                                    currentTimerState = currentTimerState,
+                                    whitelistedAppsCount = whitelistedCount
                                 )
                             }
 

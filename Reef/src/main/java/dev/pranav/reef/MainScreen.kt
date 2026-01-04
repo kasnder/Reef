@@ -48,7 +48,8 @@ fun HomeContent(
     @Suppress("UNUSED_PARAMETER") slideProgress: Float = 0f,
     onSlideProgressChange: (Float) -> Unit = {},
     currentTimeLeft: String = "00:00",
-    currentTimerState: String = "FOCUS"
+    currentTimerState: String = "FOCUS",
+    whitelistedAppsCount: Int = 0
 ) {
     val context = LocalContext.current
     val timerState by TimerStateManager.state.collectAsState()
@@ -101,7 +102,8 @@ fun HomeContent(
             )
             TimeLimitsCard(
                 modifier = Modifier.weight(1f),
-                onClick = onNavigateToWhitelist
+                onClick = onNavigateToWhitelist,
+                whitelistedCount = whitelistedAppsCount
             )
         }
 
@@ -383,7 +385,8 @@ private fun AppUsageCard(
 @Composable
 private fun TimeLimitsCard(
     modifier: Modifier = Modifier,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    whitelistedCount: Int = 0
 ) {
     Card(
         onClick = onClick,
@@ -407,7 +410,7 @@ private fun TimeLimitsCard(
                     modifier = Modifier.fillMaxSize()
                 ) {
                     Icon(
-                        Icons.Rounded.HourglassEmpty,
+                        Icons.Rounded.CheckCircle,
                         contentDescription = null,
                         modifier = Modifier.size(20.dp),
                         tint = MaterialTheme.colorScheme.onTertiaryContainer
@@ -417,7 +420,7 @@ private fun TimeLimitsCard(
 
             Column {
                 Text(
-                    text = "Time Limits",
+                    text = "Whitelist",
                     style = MaterialTheme.typography.titleLarge.copy(
                         fontWeight = FontWeight.Bold
                     ),
@@ -425,7 +428,7 @@ private fun TimeLimitsCard(
                     color = MaterialTheme.colorScheme.onTertiaryContainer
                 )
                 Text(
-                    text = "3 apps capped",
+                    text = "$whitelistedCount apps allowed",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f)
                 )
