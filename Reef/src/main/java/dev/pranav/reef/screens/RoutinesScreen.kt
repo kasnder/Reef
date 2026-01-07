@@ -127,6 +127,7 @@ fun RoutinesScreen(
                             0 -> resources.getString(R.string.no_app_limits_applied)
                             else -> resources.getQuantityString(
                                 R.plurals.app_limits_applied,
+                                routine.limits.size,
                                 routine.limits.size
                             )
                         }

@@ -387,7 +387,7 @@ fun SimpleFocusSetup(onStart: (TimerConfig) -> Unit) {
                 label = { Text(pluralStringResource(R.plurals.minutes_label, 30, 30)) })
             AssistChip(
                 onClick = { hours = 1; minutes = 0 },
-                label = { Text(stringResource(R.string.hour_label)) })
+                label = { Text(pluralStringResource(R.plurals.hours_label, 1, 1)) })
             AssistChip(
                 onClick = { hours = 2; minutes = 0 },
                 label = { Text(pluralStringResource(R.plurals.hours_label, 2, 2)) })

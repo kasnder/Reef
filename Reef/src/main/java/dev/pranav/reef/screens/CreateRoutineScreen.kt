@@ -666,10 +666,10 @@ private fun AppSelectorDialog(
             text = {
                 Column {
                     listOf(
-                        pluralStringResource(R.plurals.minutes_label, 0) to 0,
+                        pluralStringResource(R.plurals.minutes_label, 0, 0) to 0,
                         pluralStringResource(R.plurals.minutes_label, 15, 15) to 15,
                         pluralStringResource(R.plurals.minutes_label, 30, 30) to 30,
-                        stringResource(R.string.hour_label, 1) to 60,
+                        pluralStringResource(R.plurals.hours_label, 1, 1) to 60,
                         pluralStringResource(R.plurals.hours_label, 2, 2) to 120,
                         pluralStringResource(R.plurals.hours_label, 3, 3) to 180
                     ).forEach { (label, minutes) ->

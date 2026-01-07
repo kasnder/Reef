@@ -151,8 +151,6 @@
         <item quantity="other">%d minutes</item>
     </plurals>
 
-    <string name="hour_label">1 hour</string>
-
     <plurals name="hours_label">
         <item quantity="one">%1$d hour</item>
         <item quantity="other">%1$d hours</item>

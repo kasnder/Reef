@@ -75,6 +75,7 @@ object NotificationHelper {
             0 -> context.getString(R.string.no_app_limits_applied)
             else -> context.resources.getQuantityString(
                 R.plurals.app_limits_applied,
+                routine.limits.size,
                 routine.limits.size
             )
         }
@@ -146,8 +147,8 @@ object NotificationHelper {
                 context.resources.getQuantityString(
                     R.plurals.app_will_be_blocked_in,
                     minutes,
-                    minutes,
-                    appName
+                    appName,
+                    minutes
                 )
             )
             .setSmallIcon(R.drawable.round_hourglass_disabled_24)
