@@ -12,66 +12,50 @@ import dev.pranav.reef.util.isAccessibilityServiceEnabledForBlocker
 import dev.pranav.reef.util.isPrefsInitialized
 import dev.pranav.reef.util.prefs
 
-
 class BootReceiver: BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        if (!context.isAccessibilityServiceEnabledForBlocker()) return
+        val safeContext =
+            context.createDeviceProtectedStorageContext()
+
+        if (!isPrefsInitialized) {
+            prefs = safeContext.getSharedPreferences("prefs", Context.MODE_PRIVATE)
+        }
+
+        Log.d("BootReceiver", "Action received: ${intent.action}")
 
         when (intent.action) {
-            Intent.ACTION_BOOT_COMPLETED -> {
-                Log.d("BootReceiver", "Device boot completed, rescheduling routines")
+            Intent.ACTION_LOCKED_BOOT_COMPLETED,
+            Intent.ACTION_BOOT_COMPLETED,
+            Intent.ACTION_MY_PACKAGE_REPLACED,
+            Intent.ACTION_USER_PRESENT -> {
+                refreshServices(safeContext)
 
-                // Initialize prefs if not already done
-                if (!isPrefsInitialized) {
-                    prefs = context.getSharedPreferences("prefs", Context.MODE_PRIVATE)
-                }
+                RoutineScheduler.scheduleAllRoutines(safeContext)
 
-                // Reschedule all enabled routines
-                RoutineScheduler.scheduleAllRoutines(context)
-
-                // Reschedule daily summary if enabled
                 if (prefs.getBoolean("daily_summary", false)) {
-                    DailySummaryScheduler.scheduleDailySummary(context)
+                    DailySummaryScheduler.scheduleDailySummary(safeContext)
                 }
 
-                val accessibilityIntent = Intent(context, BlockerService::class.java)
-                context.startService(accessibilityIntent)
-
-                if (prefs.getBoolean("focus_mode", false)) {
-                    val serviceIntent = Intent(context, FocusModeService::class.java)
-                    context.startService(serviceIntent)
+                if (intent.action == Intent.ACTION_MY_PACKAGE_REPLACED) {
+                    prefs.edit { putBoolean("show_dialog", true) }
                 }
             }
+        }
+    }
 
-            Intent.ACTION_MY_PACKAGE_REPLACED -> {
-                Log.d("BootReceiver", "Package replaced, rescheduling routines")
-
-                // Initialize prefs if not already done
-                if (!isPrefsInitialized) {
-                    prefs = context.getSharedPreferences("prefs", Context.MODE_PRIVATE)
-                }
-
-                // Show donate dialog
-                prefs.edit {
-                    putBoolean("show_dialog", true)
-                }
-
-                // Reschedule all enabled routines
-                RoutineScheduler.scheduleAllRoutines(context)
-
-                // Reschedule daily summary if enabled
-                if (prefs.getBoolean("daily_summary", false)) {
-                    DailySummaryScheduler.scheduleDailySummary(context)
-                }
-
-                val accessibilityIntent = Intent(context, BlockerService::class.java)
+    private fun refreshServices(context: Context) {
+        if (context.isAccessibilityServiceEnabledForBlocker()) {
+            val accessibilityIntent = Intent(context, BlockerService::class.java)
+            try {
                 context.startService(accessibilityIntent)
-
-                if (prefs.getBoolean("focus_mode", false)) {
-                    val serviceIntent = Intent(context, FocusModeService::class.java)
-                    context.startService(serviceIntent)
-                }
+            } catch (e: Exception) {
+                Log.e("BootReceiver", "Could not nudge BlockerService", e)
             }
+        }
+
+        if (prefs.getBoolean("focus_mode", false)) {
+            val serviceIntent = Intent(context, FocusModeService::class.java)
+            context.startForegroundService(serviceIntent)
         }
     }
 }

@@ -6,6 +6,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
+import android.content.Intent.FLAG_RECEIVER_FOREGROUND
 import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.CountDownTimer
@@ -48,10 +49,44 @@ class FocusModeService: Service() {
     private var previousInterruptionFilter: Int? = null
     private var initialDuration: Long = 0
 
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+    override fun onCreate() {
+        super.onCreate()
+
         if (!isPrefsInitialized) {
-            prefs = getSharedPreferences("prefs", MODE_PRIVATE)
+            createDeviceProtectedStorageContext().also { safeContext ->
+                prefs = safeContext.getSharedPreferences("prefs", MODE_PRIVATE)
+            }
         }
+    }
+
+    private fun promoteToForeground() {
+        val state = TimerStateManager.state.value
+        val timeToDisplay = if (state.timeRemaining > 0) state.timeRemaining else
+            prefs.getLong("focus_time", TimeUnit.MINUTES.toMillis(10))
+
+        val notification = createNotification(
+            title = getNotificationTitle(),
+            text = getString(R.string.time_remaining, formatTime(timeToDisplay)),
+            showPauseButton = !state.isStrictMode && state.isRunning,
+            timeLeft = timeToDisplay
+        )
+
+        val foregroundType = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+        } else 0
+
+        ServiceCompat.startForeground(this, NOTIFICATION_ID, notification, foregroundType)
+    }
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        val isFocusActive = prefs.getBoolean("focus_mode", false)
+
+        if (!isFocusActive && intent?.action == null) {
+            stopSelf()
+            return START_NOT_STICKY
+        }
+
+        promoteToForeground()
 
         when (intent?.action) {
             ACTION_PAUSE -> pauseTimer()
@@ -69,7 +104,6 @@ class FocusModeService: Service() {
 
         initialDuration = focusTimeMillis
 
-        // Initialize Pomodoro config if in Pomodoro mode
         if (isPomodoroMode) {
             val config = PomodoroConfig(
                 focusDuration = prefs.getLong("pomodoro_focus_duration", 25 * 60 * 1000L),
@@ -108,18 +142,12 @@ class FocusModeService: Service() {
 
         enableDNDIfNeeded()
 
-        val notification = createNotification(
+        updateNotification(
             title = getNotificationTitle(),
             text = getString(R.string.time_remaining, formatTime(focusTimeMillis)),
             showPauseButton = !isStrictMode,
             timeLeft = focusTimeMillis
         )
-
-        val foregroundType = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
-        } else 0
-
-        ServiceCompat.startForeground(this, NOTIFICATION_ID, notification, foregroundType)
         startCountdown(focusTimeMillis)
     }
 
@@ -477,6 +505,7 @@ class FocusModeService: Service() {
             setPackage(packageName)
             putExtra(EXTRA_TIME_LEFT, formattedTime)
             putExtra(EXTRA_TIMER_STATE, state.pomodoroPhase.name)
+            addFlags(FLAG_RECEIVER_FOREGROUND)
         }
         sendBroadcast(intent)
     }
@@ -546,7 +575,7 @@ class FocusModeService: Service() {
             } else {
                 soundUriString.toUri()
             }
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             android.media.RingtoneManager.getDefaultUri(android.media.RingtoneManager.TYPE_NOTIFICATION)
         }
 

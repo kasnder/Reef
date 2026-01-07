@@ -42,7 +42,6 @@ class AppIntroActivity: ComponentActivity() {
             }
 
             BackHandler {
-                // do thing
             }
         }
     }
@@ -55,26 +54,21 @@ fun AppIntroScreen() {
     val activity = context as? ComponentActivity
     val powerManager = remember { context.getSystemService(Context.POWER_SERVICE) as PowerManager }
 
-    // Launcher for Notification Permission (Android 13+)
     val requestPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { _ ->
-        // We don't finish() here; the user simply stays on the page if they denied it.
     }
 
     val onFinishCallback = {
         prefs.edit { putBoolean("first_run", false) }
 
-        // Start your next Activity
-        // Replace 'MainActivity::class.java' with your destination activity
-        // context.startActivity(Intent(context, MainActivity::class.java))
         activity!!.finish()
     }
 
     val alarmManager =
         context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
-    val pages = listOf(
+    val pages = listOfNotNull(
         // 1. Welcome Slide
         IntroPage(
             title = stringResource(R.string.app_name),
@@ -95,7 +89,7 @@ fun AppIntroScreen() {
             onNext = {
                 if (!context.isAccessibilityServiceEnabledForBlocker()) {
                     activity?.showAccessibilityDialog()
-                    false // Prevents moving to the next slide
+                    false
                 } else true
             }
         ),
@@ -182,7 +176,7 @@ fun AppIntroScreen() {
                 }
             )
         } else null
-    ).filterNotNull()
+    )
 
     AppIntro(
         pages = pages,

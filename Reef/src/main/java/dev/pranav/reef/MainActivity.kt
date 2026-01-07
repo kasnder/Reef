@@ -170,10 +170,85 @@ class MainActivity: ComponentActivity() {
                 }
             }
 
+            var dailyUsageText by remember { mutableStateOf("0m today") }
+
+            val homeScreen = remember {
+                movableContentOf {
+                    HomeContent(
+                        onNavigateToTimer = { navController.navigate(Screen.Timer) },
+                        onNavigateToUsage = { navController.navigate(Screen.Usage) },
+                        onNavigateToRoutines = { navController.navigate(Screen.Routines) },
+                        onNavigateToWhitelist = { navController.navigate(Screen.Whitelist) },
+                        onNavigateToIntro = {
+                            startActivity(
+                                Intent(
+                                    this@MainActivity,
+                                    AppIntroActivity::class.java
+                                )
+                            )
+                        },
+                        onRequestAccessibility = {
+                            pendingFocusModeStart = true
+                            showAccessibilityDialog()
+                        },
+                        onSlideProgressChange = { progress ->
+                            slideProgress = progress
+                        },
+                        currentTimeLeft = currentTimeLeft,
+                        currentTimerState = currentTimerState,
+                        whitelistedAppsCount = whitelistedCount,
+                        dailyUsageText = dailyUsageText
+                    )
+                }
+            }
+
+            val timerScreen = remember {
+                movableContentOf {
+                    TimerContent(
+                        isTimerRunning = timerState.isRunning,
+                        isPaused = timerState.isPaused,
+                        currentTimeLeft = currentTimeLeft,
+                        currentTimerState = currentTimerState,
+                        isStrictMode = timerState.isStrictMode,
+                        onStartTimer = { config -> startFocusMode(config) },
+                        onPauseTimer = { pauseFocusMode() },
+                        onResumeTimer = { resumeFocusMode() },
+                        onCancelTimer = { cancelFocusMode() },
+                        onRestartTimer = { restartFocusMode() }
+                    )
+                }
+            }
+
+            val usageScreen = remember {
+                movableContentOf {
+                    UsageScreenWrapper(
+                        context = this@MainActivity,
+                        usageStatsManager = usageStatsManager,
+                        launcherApps = launcherApps,
+                        packageManager = packageManager,
+                        currentPackageName = packageName,
+                        onBackPressed = { navController.popBackStack() },
+                        onAppClick = { appUsageStats ->
+                            navController.navigate(
+                                Screen.DailyLimit(
+                                    appUsageStats.applicationInfo.packageName
+                                )
+                            )
+                        }
+                    )
+                }
+            }
+
+            val settingsScreen = remember {
+                movableContentOf {
+                    SettingsContent(
+                        onSoundPicker = { launchSoundPicker() }
+                    )
+                }
+            }
+
             ReefTheme {
                 Box(modifier = Modifier.fillMaxSize()) {
-                    var dailyUsageText by remember { mutableStateOf("0m today") }
-
                     LaunchedEffect(Unit) {
                         kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                             val todayUsage =
@@ -222,52 +297,36 @@ class MainActivity: ComponentActivity() {
                                 ReefBottomNavBar(
                                     selectedItem = selectedNavIndex,
                                     onItemSelected = { index ->
+                                        val options = androidx.navigation.navOptions {
+                                            popUpTo(navController.graph.startDestinationId) {
+                                                saveState = true
+                                            }
+                                            launchSingleTop = true
+                                            restoreState = true
+                                        }
+
                                         when (index) {
                                             0 -> {
                                                 if (selectedNavIndex != 0) {
-                                                    navController.navigate(Screen.Home) {
-                                                        popUpTo(navController.graph.startDestinationId) {
-                                                            saveState = true
-                                                        }
-                                                        launchSingleTop = true
-                                                        restoreState = true
-                                                    }
+                                                    navController.navigate(Screen.Home, options)
                                                 }
                                             }
 
                                             1 -> {
                                                 if (selectedNavIndex != 1) {
-                                                    navController.navigate(Screen.Usage) {
-                                                        popUpTo(navController.graph.startDestinationId) {
-                                                            saveState = true
-                                                        }
-                                                        launchSingleTop = true
-                                                        restoreState = true
-                                                    }
+                                                    navController.navigate(Screen.Usage, options)
                                                 }
                                             }
 
                                             2 -> {
                                                 if (selectedNavIndex != 2) {
-                                                    navController.navigate(Screen.Timer) {
-                                                        popUpTo(navController.graph.startDestinationId) {
-                                                            saveState = true
-                                                        }
-                                                        launchSingleTop = true
-                                                        restoreState = true
-                                                    }
+                                                    navController.navigate(Screen.Timer, options)
                                                 }
                                             }
 
                                             3 -> {
                                                 if (selectedNavIndex != 3) {
-                                                    navController.navigate(Screen.Settings) {
-                                                        popUpTo(navController.graph.startDestinationId) {
-                                                            saveState = true
-                                                        }
-                                                        launchSingleTop = true
-                                                        restoreState = true
-                                                    }
+                                                    navController.navigate(Screen.Settings, options)
                                                 }
                                             }
                                         }
@@ -351,31 +410,7 @@ class MainActivity: ComponentActivity() {
                                                 containerColor = Color.Transparent
                                             )
                                         )
-                                        HomeContent(
-                                            onNavigateToTimer = { navController.navigate(Screen.Timer) },
-                                            onNavigateToUsage = { navController.navigate(Screen.Usage) },
-                                            onNavigateToRoutines = { navController.navigate(Screen.Routines) },
-                                            onNavigateToWhitelist = { navController.navigate(Screen.Whitelist) },
-                                            onNavigateToIntro = {
-                                                startActivity(
-                                                    Intent(
-                                                        this@MainActivity,
-                                                        AppIntroActivity::class.java
-                                                    )
-                                                )
-                                            },
-                                            onRequestAccessibility = {
-                                                pendingFocusModeStart = true
-                                                showAccessibilityDialog()
-                                            },
-                                            onSlideProgressChange = { progress ->
-                                                slideProgress = progress
-                                            },
-                                            currentTimeLeft = currentTimeLeft,
-                                            currentTimerState = currentTimerState,
-                                            whitelistedAppsCount = whitelistedCount,
-                                            dailyUsageText = dailyUsageText
-                                        )
+                                        homeScreen()
                                     }
                                 }
                             }
@@ -401,18 +436,7 @@ class MainActivity: ComponentActivity() {
                                             ),
                                             modifier = Modifier.statusBarsPadding()
                                         )
-                                        TimerContent(
-                                            isTimerRunning = timerState.isRunning,
-                                            isPaused = timerState.isPaused,
-                                            currentTimeLeft = currentTimeLeft,
-                                            currentTimerState = currentTimerState,
-                                            isStrictMode = timerState.isStrictMode,
-                                            onStartTimer = { config -> startFocusMode(config) },
-                                            onPauseTimer = { pauseFocusMode() },
-                                            onResumeTimer = { resumeFocusMode() },
-                                            onCancelTimer = { cancelFocusMode() },
-                                            onRestartTimer = { restartFocusMode() }
-                                        )
+                                        timerScreen()
                                     }
                                 }
                             }
@@ -437,21 +461,7 @@ class MainActivity: ComponentActivity() {
                                                 containerColor = Color.Transparent
                                             )
                                         )
-                                        UsageScreenWrapper(
-                                            context = this@MainActivity,
-                                            usageStatsManager = usageStatsManager,
-                                            launcherApps = launcherApps,
-                                            packageManager = packageManager,
-                                            currentPackageName = packageName,
-                                            onBackPressed = { navController.popBackStack() },
-                                            onAppClick = { appUsageStats ->
-                                                navController.navigate(
-                                                    Screen.DailyLimit(
-                                                        appUsageStats.applicationInfo.packageName
-                                                    )
-                                                )
-                                            }
-                                        )
+                                        usageScreen()
                                     }
                                 }
                             }
@@ -602,22 +612,11 @@ class MainActivity: ComponentActivity() {
                                                 containerColor = Color.Transparent
                                             )
                                         )
-                                        SettingsContent(
-                                            onSoundPicker = { launchSoundPicker() }
-                                        )
+                                        settingsScreen()
                                     }
                                 }
                             }
                         }
-                    }
-
-                    // Dark overlay when sliding
-                    if (slideProgress > 0f) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(Color.Black.copy(alpha = slideProgress * 0.5f))
-                        )
                     }
                 }
             }

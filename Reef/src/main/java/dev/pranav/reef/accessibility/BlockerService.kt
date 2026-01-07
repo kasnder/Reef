@@ -8,6 +8,7 @@ import android.view.accessibility.AccessibilityEvent
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import dev.pranav.reef.R
+import dev.pranav.reef.scheduleWatcher
 import dev.pranav.reef.util.BLOCKER_CHANNEL_ID
 import dev.pranav.reef.util.NotificationHelper.createNotificationChannel
 import dev.pranav.reef.util.Whitelist
@@ -18,11 +19,14 @@ import dev.pranav.reef.util.prefs
 class BlockerService: AccessibilityService() {
 
     override fun onServiceConnected() {
+        super.onServiceConnected()
+        createNotificationChannel()
+
         if (!isPrefsInitialized) {
             prefs = getSharedPreferences("prefs", MODE_PRIVATE)
         }
 
-        createNotificationChannel()
+        scheduleWatcher(this)
     }
 
 

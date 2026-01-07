@@ -31,13 +31,11 @@ data class RoutineSchedule(
         MANUAL
     }
 
-    // Computed property to get LocalTime from hour/minute
     val time: LocalTime?
         get() = if (timeHour != null && timeMinute != null) {
             LocalTime.of(timeHour, timeMinute)
         } else null
 
-    // Computed property to get end LocalTime from hour/minute
     val endTime: LocalTime?
         get() = if (endTimeHour != null && endTimeMinute != null) {
             LocalTime.of(endTimeHour, endTimeMinute)

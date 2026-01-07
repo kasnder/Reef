@@ -30,7 +30,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.pranav.reef.R
-import dev.pranav.reef.ui.Typography
 import dev.pranav.reef.ui.Typography.DMSerif
 import dev.pranav.reef.util.prefs
 
@@ -880,7 +879,7 @@ fun RunningTimerScreenPreview() {
             text = "25:69",
             fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center,
-            fontFamily = Typography.DMSerif,
+            fontFamily = DMSerif,
             fontSize = 88.sp,
             color = MaterialTheme.colorScheme.onSurface
         )

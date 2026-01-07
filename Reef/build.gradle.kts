@@ -27,7 +27,6 @@ android {
 
     buildTypes {
         release {
-            // Causing issues smh
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
@@ -63,7 +62,6 @@ dependencies {
 
     implementation(project(":appintro"))
 
-    // Compose BOM
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.tooling)

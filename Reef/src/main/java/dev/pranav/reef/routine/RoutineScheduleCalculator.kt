@@ -30,7 +30,6 @@ object RoutineScheduleCalculator {
         val startTime = schedule.time ?: return null
         val endTime = schedule.endTime ?: return null
 
-        // Check potential start times: Today and Yesterday
         val candidates = listOf(
             now.withHour(startTime.hour).withMinute(startTime.minute).withSecond(0).withNano(0),
             now.minusDays(1).withHour(startTime.hour).withMinute(startTime.minute).withSecond(0)
@@ -38,7 +37,6 @@ object RoutineScheduleCalculator {
         )
 
         for (startCandidate in candidates) {
-            // Calculate end time for this candidate
             // If endTime < startTime, it's an overnight routine, so it ends the next day relative to startCandidate
             val endCandidate = if (endTime.isBefore(startTime)) {
                 startCandidate.plusDays(1).withHour(endTime.hour).withMinute(endTime.minute)

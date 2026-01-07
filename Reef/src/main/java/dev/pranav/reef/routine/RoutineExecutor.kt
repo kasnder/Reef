@@ -18,7 +18,6 @@ object RoutineExecutor {
 
         val limitsMap = routine.limits.associate { it.packageName to it.limitMinutes }
 
-        // Calculate the correct start time for this session
         val startTime = RoutineScheduleCalculator.getRoutineStartTime(routine)
 
         RoutineLimits.setRoutineLimits(limitsMap, routine.id, startTime)
