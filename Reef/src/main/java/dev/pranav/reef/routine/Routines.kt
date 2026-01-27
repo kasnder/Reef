@@ -362,7 +362,7 @@ object Routines {
 
     /**
      * Check if a domain matches a website blocking pattern.
-     * Supports exact matches and simple wildcard patterns.
+     * Supports exact matches and subdomain matching.
      */
     private fun domainMatches(domain: String, pattern: String): Boolean {
         val normalizedDomain = domain.lowercase().removePrefix("www.")
@@ -371,7 +371,6 @@ object Routines {
         return when {
             normalizedPattern == normalizedDomain -> true
             normalizedDomain.endsWith(".$normalizedPattern") -> true
-            normalizedDomain.contains(normalizedPattern) -> true
             else -> false
         }
     }

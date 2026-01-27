@@ -25,6 +25,14 @@ import dev.pranav.reef.util.prefs
 @SuppressLint("AccessibilityPolicy")
 class BlockerService: AccessibilityService() {
 
+    companion object {
+        // Firefox package names to monitor for website blocking
+        private val FIREFOX_PACKAGES = setOf(
+            "org.mozilla.firefox",      // Firefox stable
+            "org.mozilla.fenix"         // Firefox preview/beta
+        )
+    }
+
     private val routineChangeReceiver = object: BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             if (intent?.action == Routines.ACTION_CHANGED) {
@@ -71,7 +79,7 @@ class BlockerService: AccessibilityService() {
         if (Whitelist.isWhitelisted(pkg)) return
 
         // Check for Firefox website blocking
-        if (pkg == "org.mozilla.firefox" || pkg == "org.mozilla.fenix") {
+        if (pkg in FIREFOX_PACKAGES) {
             val domain = extractDomainFromEvent(event)
             if (domain != null && checkWebsiteBlocked(domain)) {
                 Log.d("BlockerService", "Blocking Firefox website: $domain")
@@ -99,8 +107,9 @@ class BlockerService: AccessibilityService() {
     }
 
     private fun extractDomainFromEvent(event: AccessibilityEvent): String? {
-        // Try to extract domain from the page title or URL bar
-        // Firefox accessibility events may contain the page title which often includes the domain
+        // Attempt to extract domain from accessibility event text using heuristic pattern matching
+        // Note: Firefox does not reliably expose URL information through accessibility events.
+        // This is a best-effort approach that searches for URL patterns in event text.
         val text = event.text?.joinToString(" ") ?: ""
         val contentDescription = event.contentDescription?.toString() ?: ""
         
@@ -113,6 +122,8 @@ class BlockerService: AccessibilityService() {
 
     private fun checkWebsiteBlocked(domain: String): Boolean {
         val limitMs = Routines.getWebsiteLimitMs(domain)
+        // Note: Currently only supports full blocking (limitMs == 0).
+        // Time-based limits require website usage tracking which is not yet implemented.
         return limitMs != null && limitMs == 0L
     }
 

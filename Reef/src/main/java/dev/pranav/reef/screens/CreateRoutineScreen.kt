@@ -898,11 +898,20 @@ private fun WebsiteInputDialog(
             TextButton(
                 onClick = {
                     val cleanDomain = domain.trim()
+                        .lowercase()
                         .removePrefix("https://")
                         .removePrefix("http://")
                         .removePrefix("www.")
                         .removeSuffix("/")
-                    if (cleanDomain.isNotEmpty()) {
+                    
+                    // Validate domain format (must contain at least one dot and valid characters)
+                    val isValidDomain = cleanDomain.isNotEmpty() && 
+                                       cleanDomain.contains('.') && 
+                                       cleanDomain.matches(Regex("^[a-z0-9.-]+$")) &&
+                                       !cleanDomain.startsWith('.') &&
+                                       !cleanDomain.endsWith('.')
+                    
+                    if (isValidDomain) {
                         onWebsiteAdded(cleanDomain, selectedLimit)
                     }
                 },
