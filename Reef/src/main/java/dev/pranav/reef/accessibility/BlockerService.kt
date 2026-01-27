@@ -77,6 +77,20 @@ class BlockerService: AccessibilityService() {
             return
         }
 
+        // Check for website blocking in Firefox
+        if (isFirefoxPackage(pkg)) {
+            val url = extractUrlFromEvent(event)
+            if (url != null) {
+                val domain = extractDomain(url)
+                if (domain != null && Routines.isWebsiteBlocked(domain)) {
+                    Log.d("BlockerService", "Blocking website $domain in Firefox")
+                    performGlobalAction(GLOBAL_ACTION_HOME)
+                    showWebsiteBlockedNotification(domain)
+                    return
+                }
+            }
+        }
+
         val blockReason = UsageTracker.checkBlockReason(this, pkg)
         if (blockReason == UsageTracker.BlockReason.NONE) return
 
@@ -85,6 +99,73 @@ class BlockerService: AccessibilityService() {
         performGlobalAction(GLOBAL_ACTION_HOME)
 
         showBlockedNotification(pkg, blockReason)
+    }
+
+    private fun isFirefoxPackage(packageName: String): Boolean {
+        return packageName == "org.mozilla.firefox" ||
+               packageName == "org.mozilla.firefox_beta" ||
+               packageName == "org.mozilla.fenix" ||
+               packageName == "org.mozilla.fenix.nightly" ||
+               packageName == "org.mozilla.focus"
+    }
+
+    private fun extractUrlFromEvent(event: AccessibilityEvent): String? {
+        // Try to extract URL from the event's source node
+        val source = event.source ?: return null
+
+        try {
+            // Look for URL bar or address bar node
+            val urlNode = findUrlNode(source)
+            if (urlNode != null) {
+                val text = urlNode.text?.toString()
+                urlNode.recycle()
+                if (text != null && (text.startsWith("http://") || text.startsWith("https://") || text.contains("."))) {
+                    return text
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("BlockerService", "Error extracting URL", e)
+        } finally {
+            source.recycle()
+        }
+        return null
+    }
+
+    private fun findUrlNode(node: android.view.accessibility.AccessibilityNodeInfo): android.view.accessibility.AccessibilityNodeInfo? {
+        // Check if this node might be the URL bar
+        if (node.viewIdResourceName?.contains("url") == true ||
+            node.viewIdResourceName?.contains("address") == true ||
+            node.viewIdResourceName?.contains("mozac_browser_toolbar_url_view") == true) {
+            val text = node.text?.toString()
+            if (text != null && text.isNotBlank()) {
+                return android.view.accessibility.AccessibilityNodeInfo.obtain(node)
+            }
+        }
+
+        // Search children
+        for (i in 0 until node.childCount) {
+            val child = node.getChild(i) ?: continue
+            val result = findUrlNode(child)
+            child.recycle()
+            if (result != null) return result
+        }
+
+        return null
+    }
+
+    private fun extractDomain(url: String): String? {
+        return try {
+            var normalizedUrl = url.trim()
+            // Add protocol if missing for proper URL parsing
+            if (!normalizedUrl.startsWith("http://") && !normalizedUrl.startsWith("https://")) {
+                normalizedUrl = "https://$normalizedUrl"
+            }
+            val uri = java.net.URI(normalizedUrl)
+            uri.host?.lowercase()?.removePrefix("www.")
+        } catch (e: Exception) {
+            Log.e("BlockerService", "Error extracting domain from URL: $url", e)
+            null
+        }
     }
 
     @SuppressLint("MissingPermission")
@@ -146,6 +227,25 @@ class BlockerService: AccessibilityService() {
 
         NotificationManagerCompat.from(this)
             .notify(pkg.hashCode(), notification)
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun showWebsiteBlockedNotification(domain: String) {
+        if (NotificationManagerCompat.from(this).areNotificationsEnabled().not()) {
+            Log.w("BlockerService", "Notifications disabled by user")
+            return
+        }
+
+        val notification = NotificationCompat.Builder(this, BLOCKER_CHANNEL_ID)
+            .setSmallIcon(R.drawable.round_hourglass_disabled_24)
+            .setContentTitle(getString(R.string.website_blocked))
+            .setContentText(getString(R.string.website_blocked_by_routine, domain))
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true)
+            .build()
+
+        NotificationManagerCompat.from(this)
+            .notify(domain.hashCode(), notification)
     }
 
     override fun onInterrupt() {}
