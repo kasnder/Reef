@@ -70,6 +70,17 @@ class BlockerService: AccessibilityService() {
         if (pkg == packageName) return
         if (Whitelist.isWhitelisted(pkg)) return
 
+        // Check for Firefox website blocking
+        if (pkg == "org.mozilla.firefox" || pkg == "org.mozilla.fenix") {
+            val domain = extractDomainFromEvent(event)
+            if (domain != null && checkWebsiteBlocked(domain)) {
+                Log.d("BlockerService", "Blocking Firefox website: $domain")
+                performGlobalAction(GLOBAL_ACTION_HOME)
+                showWebsiteBlockedNotification(domain)
+                return
+            }
+        }
+
         if (prefs.getBoolean("focus_mode", false)) {
             Log.d("BlockerService", "Blocking $pkg in focus mode")
             performGlobalAction(GLOBAL_ACTION_HOME)
@@ -85,6 +96,43 @@ class BlockerService: AccessibilityService() {
         performGlobalAction(GLOBAL_ACTION_HOME)
 
         showBlockedNotification(pkg, blockReason)
+    }
+
+    private fun extractDomainFromEvent(event: AccessibilityEvent): String? {
+        // Try to extract domain from the page title or URL bar
+        // Firefox accessibility events may contain the page title which often includes the domain
+        val text = event.text?.joinToString(" ") ?: ""
+        val contentDescription = event.contentDescription?.toString() ?: ""
+        
+        // Look for common URL patterns in the text
+        val urlPattern = Regex("""(?:https?://)?(?:www\.)?([a-zA-Z0-9-]+\.[a-zA-Z]{2,})""")
+        val match = urlPattern.find(text) ?: urlPattern.find(contentDescription)
+        
+        return match?.groupValues?.getOrNull(1)?.lowercase()
+    }
+
+    private fun checkWebsiteBlocked(domain: String): Boolean {
+        val limitMs = Routines.getWebsiteLimitMs(domain)
+        return limitMs != null && limitMs == 0L
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun showWebsiteBlockedNotification(domain: String) {
+        if (NotificationManagerCompat.from(this).areNotificationsEnabled().not()) {
+            Log.w("BlockerService", "Notifications disabled by user")
+            return
+        }
+
+        val notification = NotificationCompat.Builder(this, BLOCKER_CHANNEL_ID)
+            .setSmallIcon(R.drawable.round_hourglass_disabled_24)
+            .setContentTitle(getString(R.string.app_blocked))
+            .setContentText("Website blocked: $domain")
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true)
+            .build()
+
+        NotificationManagerCompat.from(this)
+            .notify(domain.hashCode(), notification)
     }
 
     @SuppressLint("MissingPermission")

@@ -63,9 +63,11 @@ fun CreateRoutineScreen(
     var selectedEndTime by remember { mutableStateOf(LocalTime.of(17, 0)) }
     var selectedDays by remember { mutableStateOf(setOf<DayOfWeek>()) }
     var appLimits by remember { mutableStateOf(listOf<Routine.AppLimit>()) }
+    var websiteLimits by remember { mutableStateOf(listOf<Routine.WebsiteLimit>()) }
     var showTimePicker by remember { mutableStateOf(false) }
     var showEndTimePicker by remember { mutableStateOf(false) }
     var showAppSelector by remember { mutableStateOf(false) }
+    var showWebsiteDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(routineId) {
@@ -78,6 +80,7 @@ fun CreateRoutineScreen(
                 routine.schedule.endTime?.let { selectedEndTime = it }
                 selectedDays = routine.schedule.daysOfWeek
                 appLimits = routine.limits
+                websiteLimits = routine.websiteLimits
             }
         }
     }
@@ -321,6 +324,61 @@ fun CreateRoutineScreen(
                 }
             }
 
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Website Limits Section
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Website Limits (Firefox)",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                FilledTonalButton(
+                    onClick = { showWebsiteDialog = true },
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Add,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Add Website")
+                }
+            }
+
+            if (websiteLimits.isEmpty()) {
+                OutlinedCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(20.dp)
+                ) {
+                    Text(
+                        text = "No website limits set. Add websites to block in Firefox during this routine.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(32.dp)
+                    )
+                }
+            } else {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    websiteLimits.forEach { limit ->
+                        WebsiteLimitItem(
+                            websiteLimit = limit,
+                            onRemove = {
+                                websiteLimits = websiteLimits.filter { it.domain != limit.domain }
+                            }
+                        )
+                    }
+                }
+            }
+
             Spacer(modifier = Modifier.height(16.dp))
 
             Button(
@@ -403,6 +461,17 @@ fun CreateRoutineScreen(
                 showAppSelector = false
             },
             onDismiss = { showAppSelector = false }
+        )
+    }
+
+    if (showWebsiteDialog) {
+        WebsiteInputDialog(
+            onWebsiteAdded = { domain, limitMinutes ->
+                websiteLimits = websiteLimits.filter { it.domain != domain } +
+                        Routine.WebsiteLimit(domain, limitMinutes)
+                showWebsiteDialog = false
+            },
+            onDismiss = { showWebsiteDialog = false }
         )
     }
 
@@ -744,9 +813,179 @@ private fun saveRoutine(
         name = name.trim(),
         isEnabled = currentRoutine?.isEnabled ?: true,
         schedule = schedule,
-        limits = appLimits
+        limits = appLimits,
+        websiteLimits = websiteLimits
     )
 
     Routines.save(routine, context)
     return true
+}
+
+@Composable
+private fun WebsiteLimitItem(
+    websiteLimit: Routine.WebsiteLimit,
+    onRemove: () -> Unit
+) {
+    OutlinedCard(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Surface(
+                modifier = Modifier.size(48.dp),
+                shape = RoundedCornerShape(12.dp),
+                tonalElevation = 1.dp,
+                color = MaterialTheme.colorScheme.primaryContainer
+            ) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "🌐",
+                        style = MaterialTheme.typography.headlineMedium
+                    )
+                }
+            }
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = websiteLimit.domain,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = if (websiteLimit.limitMinutes == 0) "Blocked" else "${websiteLimit.limitMinutes} min limit",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            IconButton(
+                onClick = onRemove,
+                modifier = Modifier.size(40.dp)
+            ) {
+                Icon(
+                    Icons.Default.Close,
+                    contentDescription = "Remove website limit",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun WebsiteInputDialog(
+    onWebsiteAdded: (domain: String, limitMinutes: Int) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var domain by remember { mutableStateOf("") }
+    var selectedLimit by remember { mutableStateOf(0) }
+    var showLimitPicker by remember { mutableStateOf(false) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    val cleanDomain = domain.trim()
+                        .removePrefix("https://")
+                        .removePrefix("http://")
+                        .removePrefix("www.")
+                        .removeSuffix("/")
+                    if (cleanDomain.isNotEmpty()) {
+                        onWebsiteAdded(cleanDomain, selectedLimit)
+                    }
+                },
+                enabled = domain.trim().isNotEmpty()
+            ) {
+                Text("Add")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        },
+        title = { Text("Add Website to Block") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                OutlinedTextField(
+                    value = domain,
+                    onValueChange = { domain = it },
+                    label = { Text("Website Domain") },
+                    placeholder = { Text("e.g., facebook.com, youtube.com") },
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Uri,
+                        imeAction = ImeAction.Done
+                    ),
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+
+                Text(
+                    text = "Enter the domain name without http:// or www.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                OutlinedCard(
+                    onClick = { showLimitPicker = true },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Time Limit",
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                        Text(
+                            text = if (selectedLimit == 0) "Blocked" else "$selectedLimit min",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+
+                if (showLimitPicker) {
+                    AlertDialog(
+                        onDismissRequest = { showLimitPicker = false },
+                        title = { Text("Select Time Limit") },
+                        text = {
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                listOf(0, 5, 15, 30, 60, 120, 180).forEach { minutes ->
+                                    OutlinedCard(
+                                        onClick = {
+                                            selectedLimit = minutes
+                                            showLimitPicker = false
+                                        },
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Text(
+                                            text = if (minutes == 0) "Blocked (0 min)" else "$minutes minutes",
+                                            modifier = Modifier.padding(16.dp),
+                                            style = MaterialTheme.typography.bodyLarge
+                                        )
+                                    }
+                                }
+                            }
+                        },
+                        confirmButton = {}
+                    )
+                }
+            }
+        }
+    )
 }

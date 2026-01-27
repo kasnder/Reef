@@ -27,7 +27,8 @@ object Routines {
     data class ActiveSession(
         val routineId: String,
         val startTime: Long,
-        val limits: Map<String, Long>
+        val limits: Map<String, Long>,
+        val websiteLimits: Map<String, Long> = emptyMap()
     )
 
     fun getAll(): List<Routine> {
@@ -58,7 +59,8 @@ object Routines {
         if (sessionIndex >= 0) {
             val oldSession = sessions[sessionIndex]
             val newLimits = routine.limits.associate { it.packageName to it.limitMinutes * 60_000L }
-            sessions[sessionIndex] = oldSession.copy(limits = newLimits)
+            val newWebsiteLimits = routine.websiteLimits.associate { it.domain to it.limitMinutes * 60_000L }
+            sessions[sessionIndex] = oldSession.copy(limits = newLimits, websiteLimits = newWebsiteLimits)
             saveActiveSessions(sessions)
             broadcast(context)
         }
@@ -156,13 +158,14 @@ object Routines {
         val newSession = ActiveSession(
             routineId = routine.id,
             startTime = System.currentTimeMillis(),
-            limits = routine.limits.associate { it.packageName to it.limitMinutes * 60_000L }
+            limits = routine.limits.associate { it.packageName to it.limitMinutes * 60_000L },
+            websiteLimits = routine.websiteLimits.associate { it.domain to it.limitMinutes * 60_000L }
         )
         sessions.add(newSession)
 
         saveActiveSessions(sessions)
 
-        Log.d(TAG, "Started session for ${routine.name} with ${routine.limits.size} limits")
+        Log.d(TAG, "Started session for ${routine.name} with ${routine.limits.size} app limits and ${routine.websiteLimits.size} website limits")
         Log.d(TAG, "Total active sessions: ${sessions.size}")
 
         broadcast(context)
@@ -199,11 +202,18 @@ object Routines {
                         limitsJson.keys().forEach { key ->
                             limits[key] = limitsJson.getLong(key)
                         }
+                        
+                        val websiteLimitsJson = obj.optJSONObject("websiteLimits")
+                        val websiteLimits = mutableMapOf<String, Long>()
+                        websiteLimitsJson?.keys()?.forEach { key ->
+                            websiteLimits[key] = websiteLimitsJson.getLong(key)
+                        }
 
                         ActiveSession(
                             routineId = obj.getString("routineId"),
                             startTime = obj.getLong("startTime"),
-                            limits = limits
+                            limits = limits,
+                            websiteLimits = websiteLimits
                         )
                     } catch (_: Exception) {
                         null
@@ -224,6 +234,11 @@ object Routines {
                     put("limits", JSONObject().apply {
                         session.limits.forEach { (pkg, limit) ->
                             put(pkg, limit)
+                        }
+                    })
+                    put("websiteLimits", JSONObject().apply {
+                        session.websiteLimits.forEach { (domain, limit) ->
+                            put(domain, limit)
                         }
                     })
                 })
@@ -304,6 +319,63 @@ object Routines {
         return maxUsage
     }
 
+    /**
+     * Get the strictest limit for a website across ALL active routines.
+     * Returns null if no routine is limiting this website.
+     */
+    fun getWebsiteLimitMs(domain: String): Long? {
+        val sessions = getActiveSessions()
+
+        if (sessions.isEmpty()) {
+            return null
+        }
+
+        Log.d(TAG, "getWebsiteLimitMs($domain): Checking ${sessions.size} active sessions")
+
+        var strictestLimit: Long? = null
+
+        sessions.forEach { session ->
+            val routine = get(session.routineId)
+            if (routine == null) {
+                Log.d(TAG, "  Session routine ${session.routineId} not found, skipping")
+                return@forEach
+            }
+
+            val maxDuration = RoutineScheduler.getMaxRoutineDuration(routine.schedule)
+            if (System.currentTimeMillis() - session.startTime > maxDuration) {
+                Log.d(TAG, "  Session for ${routine.name} expired")
+                return@forEach
+            }
+
+            // Check if this session has a limit for this website (exact or pattern match)
+            session.websiteLimits.forEach { (pattern, limit) ->
+                if (domainMatches(domain, pattern)) {
+                    Log.d(TAG, "  ${routine.name} limits $domain (matched pattern: $pattern) to ${limit}ms")
+                    strictestLimit = if (strictestLimit == null) limit else minOf(strictestLimit, limit)
+                }
+            }
+        }
+
+        Log.d(TAG, "getWebsiteLimitMs($domain): strictest limit = $strictestLimit")
+        return strictestLimit
+    }
+
+    /**
+     * Check if a domain matches a website blocking pattern.
+     * Supports exact matches and simple wildcard patterns.
+     */
+    private fun domainMatches(domain: String, pattern: String): Boolean {
+        val normalizedDomain = domain.lowercase().removePrefix("www.")
+        val normalizedPattern = pattern.lowercase().removePrefix("www.")
+        
+        return when {
+            normalizedPattern == normalizedDomain -> true
+            normalizedDomain.endsWith(".$normalizedPattern") -> true
+            normalizedDomain.contains(normalizedPattern) -> true
+            else -> false
+        }
+    }
+
     private fun broadcast(context: Context) {
         val sessions = getActiveSessions()
         val sessionsJson = JSONArray().apply {
@@ -314,6 +386,11 @@ object Routines {
                     put("limits", JSONObject().apply {
                         session.limits.forEach { (pkg, limit) ->
                             put(pkg, limit)
+                        }
+                    })
+                    put("websiteLimits", JSONObject().apply {
+                        session.websiteLimits.forEach { (domain, limit) ->
+                            put(domain, limit)
                         }
                     })
                 })
@@ -397,12 +474,24 @@ object Routines {
             }
         }
 
+        val websiteLimits = json.optJSONArray("websiteLimits")?.let { arr ->
+            (0 until arr.length()).map { i ->
+                arr.getJSONObject(i).let { limitJson ->
+                    Routine.WebsiteLimit(
+                        domain = limitJson.getString("domain"),
+                        limitMinutes = limitJson.getInt("limitMinutes")
+                    )
+                }
+            }
+        } ?: emptyList()
+
         Routine(
             id = json.getString("id"),
             name = json.getString("name"),
             isEnabled = json.getBoolean("isEnabled"),
             schedule = schedule,
-            limits = limits
+            limits = limits,
+            websiteLimits = websiteLimits
         )
     } catch (_: Exception) {
         null
@@ -430,6 +519,15 @@ object Routines {
             routine.limits.forEach { limit ->
                 put(JSONObject().apply {
                     put("packageName", limit.packageName)
+                    put("limitMinutes", limit.limitMinutes)
+                })
+            }
+        })
+
+        put("websiteLimits", JSONArray().apply {
+            routine.websiteLimits.forEach { limit ->
+                put(JSONObject().apply {
+                    put("domain", limit.domain)
                     put("limitMinutes", limit.limitMinutes)
                 })
             }

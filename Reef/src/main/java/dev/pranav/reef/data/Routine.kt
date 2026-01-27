@@ -8,10 +8,16 @@ data class Routine(
     val name: String,
     val isEnabled: Boolean = true,
     val schedule: RoutineSchedule,
-    val limits: List<AppLimit>
+    val limits: List<AppLimit>,
+    val websiteLimits: List<WebsiteLimit> = emptyList()
 ) {
     data class AppLimit(
         val packageName: String,
+        val limitMinutes: Int
+    )
+    
+    data class WebsiteLimit(
+        val domain: String,
         val limitMinutes: Int
     )
 }
