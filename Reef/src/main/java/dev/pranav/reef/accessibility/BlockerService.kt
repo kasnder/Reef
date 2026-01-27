@@ -38,6 +38,11 @@ class BlockerService: AccessibilityService() {
         }
     }
 
+    // Caching for website URL checks to avoid performance issues
+    private var lastCheckedUrl: String? = null
+    private var lastUrlCheckTime: Long = 0
+    private val URL_CHECK_THROTTLE_MS = 500L // Throttle URL checks to max 2 per second
+
     override fun onServiceConnected() {
         super.onServiceConnected()
         createNotificationChannel()
@@ -79,14 +84,22 @@ class BlockerService: AccessibilityService() {
 
         // Check for website blocking in Firefox
         if (isFirefoxPackage(pkg)) {
-            val url = extractUrlFromEvent(event)
-            if (url != null) {
-                val domain = extractDomain(url)
-                if (domain != null && Routines.isWebsiteBlocked(domain)) {
-                    Log.d("BlockerService", "Blocking website $domain in Firefox")
-                    performGlobalAction(GLOBAL_ACTION_HOME)
-                    showWebsiteBlockedNotification(domain)
-                    return
+            // Throttle URL checks to avoid performance issues
+            val currentTime = System.currentTimeMillis()
+            val shouldCheckUrl = currentTime - lastUrlCheckTime >= URL_CHECK_THROTTLE_MS
+
+            if (shouldCheckUrl) {
+                lastUrlCheckTime = currentTime
+                val url = extractUrlFromEvent(event)
+                if (url != null && url != lastCheckedUrl) {
+                    lastCheckedUrl = url
+                    val domain = extractDomain(url)
+                    if (domain != null && Routines.isWebsiteBlocked(domain)) {
+                        Log.d("BlockerService", "Blocking website $domain in Firefox")
+                        performGlobalAction(GLOBAL_ACTION_HOME)
+                        showWebsiteBlockedNotification(domain)
+                        return
+                    }
                 }
             }
         }
@@ -117,10 +130,13 @@ class BlockerService: AccessibilityService() {
             // Look for URL bar or address bar node
             val urlNode = findUrlNode(source)
             if (urlNode != null) {
-                val text = urlNode.text?.toString()
-                urlNode.recycle()
-                if (text != null && (text.startsWith("http://") || text.startsWith("https://") || text.contains("."))) {
-                    return text
+                try {
+                    val text = urlNode.text?.toString()
+                    if (text != null && isValidUrlFormat(text)) {
+                        return text
+                    }
+                } finally {
+                    urlNode.recycle()
                 }
             }
         } catch (e: Exception) {
@@ -129,6 +145,21 @@ class BlockerService: AccessibilityService() {
             source.recycle()
         }
         return null
+    }
+
+    private fun isValidUrlFormat(text: String): Boolean {
+        // Check for valid URL format: should start with http(s):// or look like a domain
+        val trimmed = text.trim()
+        if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+            return true
+        }
+        // Check if it looks like a domain (word.word pattern, no spaces)
+        if (trimmed.contains(" ") || trimmed.length < 4) {
+            return false
+        }
+        // Simple domain pattern: contains a dot and no invalid characters
+        val domainPattern = Regex("^[a-zA-Z0-9][a-zA-Z0-9.-]*\\.[a-zA-Z]{2,}(/.*)?$")
+        return domainPattern.matches(trimmed)
     }
 
     private fun findUrlNode(node: android.view.accessibility.AccessibilityNodeInfo): android.view.accessibility.AccessibilityNodeInfo? {
@@ -142,12 +173,22 @@ class BlockerService: AccessibilityService() {
             }
         }
 
-        // Search children
-        for (i in 0 until node.childCount) {
+        // Search children - collect all children first, then search
+        val childCount = node.childCount
+        for (i in 0 until childCount) {
             val child = node.getChild(i) ?: continue
-            val result = findUrlNode(child)
-            child.recycle()
-            if (result != null) return result
+            try {
+                val result = findUrlNode(child)
+                if (result != null) {
+                    // Recycle remaining children before returning
+                    for (j in (i + 1) until childCount) {
+                        node.getChild(j)?.recycle()
+                    }
+                    return result
+                }
+            } finally {
+                child.recycle()
+            }
         }
 
         return null

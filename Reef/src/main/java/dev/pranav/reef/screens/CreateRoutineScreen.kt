@@ -716,8 +716,11 @@ private fun extractDomainFromInput(input: String): String? {
         }
         val uri = java.net.URI(normalizedUrl)
         val host = uri.host ?: return null
-        // Basic validation: must contain at least one dot
-        if (!host.contains(".")) return null
+        // Validation: must contain at least one dot and have a valid TLD (min 2 characters)
+        val parts = host.split(".")
+        if (parts.size < 2 || parts.last().length < 2) return null
+        // Check that all parts are non-empty and contain valid characters
+        if (parts.any { it.isBlank() || !it.matches(Regex("[a-zA-Z0-9-]+")) }) return null
         host.removePrefix("www.")
     } catch (e: Exception) {
         null
