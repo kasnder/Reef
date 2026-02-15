@@ -84,21 +84,42 @@ class BlockerService: AccessibilityService() {
 
         // Check for website blocking in Firefox
         if (isFirefoxPackage(pkg)) {
+            Log.d("BlockerService", "[DEBUG] Firefox package detected: $pkg, eventType=${event.eventType}, contentChangeTypes=${event.contentChangeTypes}")
+
             // Throttle URL checks to avoid performance issues
             val currentTime = System.currentTimeMillis()
             val shouldCheckUrl = currentTime - lastUrlCheckTime >= URL_CHECK_THROTTLE_MS
 
-            if (shouldCheckUrl) {
+            if (!shouldCheckUrl) {
+                Log.d("BlockerService", "[DEBUG] URL check throttled (${currentTime - lastUrlCheckTime}ms since last check)")
+            } else {
                 lastUrlCheckTime = currentTime
                 val url = extractUrlFromEvent(event)
-                if (url != null && url != lastCheckedUrl) {
+                Log.d("BlockerService", "[DEBUG] Extracted URL from event: '$url'")
+                if (url == null) {
+                    Log.d("BlockerService", "[DEBUG] URL extraction returned null - could not find URL bar node or text")
+                } else if (url == lastCheckedUrl) {
+                    Log.d("BlockerService", "[DEBUG] URL unchanged from last check, skipping")
+                } else {
                     lastCheckedUrl = url
                     val domain = extractDomain(url)
-                    if (domain != null && Routines.isWebsiteBlocked(domain)) {
-                        Log.d("BlockerService", "Blocking website $domain in Firefox")
-                        performGlobalAction(GLOBAL_ACTION_HOME)
-                        showWebsiteBlockedNotification(domain)
-                        return
+                    Log.d("BlockerService", "[DEBUG] Extracted domain: '$domain' from URL: '$url'")
+                    if (domain == null) {
+                        Log.d("BlockerService", "[DEBUG] Domain extraction failed for URL: '$url'")
+                    } else {
+                        val isBlocked = Routines.isWebsiteBlocked(domain)
+                        Log.d("BlockerService", "[DEBUG] isWebsiteBlocked('$domain') = $isBlocked")
+                        val sessions = Routines.getActiveSessions()
+                        Log.d("BlockerService", "[DEBUG] Active sessions: ${sessions.size}")
+                        sessions.forEach { session ->
+                            Log.d("BlockerService", "[DEBUG]   Session ${session.routineId}: websiteLimits=${session.websiteLimits}")
+                        }
+                        if (isBlocked) {
+                            Log.d("BlockerService", "Blocking website $domain in Firefox")
+                            performGlobalAction(GLOBAL_ACTION_HOME)
+                            showWebsiteBlockedNotification(domain)
+                            return
+                        }
                     }
                 }
             }
@@ -123,26 +144,46 @@ class BlockerService: AccessibilityService() {
     }
 
     private fun extractUrlFromEvent(event: AccessibilityEvent): String? {
-        // Try to extract URL from the event's source node
-        val source = event.source ?: return null
+        // Use rootInActiveWindow instead of event.source because the URL bar is in the
+        // toolbar (a sibling of the WebView), not inside the WebView where content changes fire.
+        val root = rootInActiveWindow
+        if (root == null) {
+            Log.d("BlockerService", "[DEBUG] extractUrlFromEvent: rootInActiveWindow is null")
+            return null
+        }
 
         try {
-            // Look for URL bar or address bar node
-            val urlNode = findUrlNode(source)
-            if (urlNode != null) {
-                try {
-                    val text = urlNode.text?.toString()
-                    if (text != null && isValidUrlFormat(text)) {
-                        return text
+            val pkg = event.packageName?.toString() ?: return null
+
+            // Use efficient direct viewId lookup for known Firefox URL bar IDs
+            val knownUrlViewIds = listOf(
+                "$pkg:id/mozac_browser_toolbar_url_view",
+                "$pkg:id/url_bar_title",
+                "$pkg:id/display_url"
+            )
+
+            for (viewId in knownUrlViewIds) {
+                val nodes = root.findAccessibilityNodeInfosByViewId(viewId)
+                if (nodes.isNullOrEmpty()) continue
+
+                for (node in nodes) {
+                    try {
+                        val text = node.text?.toString()
+                        Log.d("BlockerService", "[DEBUG] extractUrlFromEvent: found node viewId='$viewId', text='$text'")
+                        if (text != null && isValidUrlFormat(text)) {
+                            return text
+                        }
+                    } finally {
+                        node.recycle()
                     }
-                } finally {
-                    urlNode.recycle()
                 }
             }
+
+            Log.d("BlockerService", "[DEBUG] extractUrlFromEvent: no URL node found via direct viewId lookup")
         } catch (e: Exception) {
             Log.e("BlockerService", "Error extracting URL", e)
         } finally {
-            source.recycle()
+            root.recycle()
         }
         return null
     }
@@ -160,38 +201,6 @@ class BlockerService: AccessibilityService() {
         // Simple domain pattern: contains a dot and no invalid characters
         val domainPattern = Regex("^[a-zA-Z0-9][a-zA-Z0-9.-]*\\.[a-zA-Z]{2,}(/.*)?$")
         return domainPattern.matches(trimmed)
-    }
-
-    private fun findUrlNode(node: android.view.accessibility.AccessibilityNodeInfo): android.view.accessibility.AccessibilityNodeInfo? {
-        // Check if this node might be the URL bar
-        if (node.viewIdResourceName?.contains("url") == true ||
-            node.viewIdResourceName?.contains("address") == true ||
-            node.viewIdResourceName?.contains("mozac_browser_toolbar_url_view") == true) {
-            val text = node.text?.toString()
-            if (text != null && text.isNotBlank()) {
-                return android.view.accessibility.AccessibilityNodeInfo.obtain(node)
-            }
-        }
-
-        // Search children - collect all children first, then search
-        val childCount = node.childCount
-        for (i in 0 until childCount) {
-            val child = node.getChild(i) ?: continue
-            try {
-                val result = findUrlNode(child)
-                if (result != null) {
-                    // Recycle remaining children before returning
-                    for (j in (i + 1) until childCount) {
-                        node.getChild(j)?.recycle()
-                    }
-                    return result
-                }
-            } finally {
-                child.recycle()
-            }
-        }
-
-        return null
     }
 
     private fun extractDomain(url: String): String? {

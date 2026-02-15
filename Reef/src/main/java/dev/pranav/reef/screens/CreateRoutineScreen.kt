@@ -858,7 +858,9 @@ private fun AppSelectorDialog(
                 ) {
                     items(filteredApps) { (packageName, appName) ->
                         TextButton(
-                            onClick = { selectedApp = packageName to appName },
+                            onClick = {
+                                onAppSelected(packageName, appName, 0)
+                            },
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp)
                         ) {

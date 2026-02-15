@@ -282,7 +282,8 @@ object Routines {
                 Log.d(TAG, "  ${routine.name} limits $packageName to ${limit}ms")
 
                 // Take the strictest (lowest) limit
-                strictestLimit = if (strictestLimit == null) limit else minOf(strictestLimit, limit)
+                val current = strictestLimit
+                strictestLimit = if (current == null) limit else minOf(current, limit)
             }
         }
 
@@ -351,7 +352,8 @@ object Routines {
             session.websiteLimits.forEach { (blockedDomain, limit) ->
                 if (domain == blockedDomain || domain.endsWith(".$blockedDomain")) {
                     Log.d(TAG, "  ${routine.name} limits $domain to ${limit}ms (matched $blockedDomain)")
-                    strictestLimit = if (strictestLimit == null) limit else minOf(strictestLimit, limit)
+                    val current = strictestLimit
+                    strictestLimit = if (current == null) limit else minOf(current, limit)
                 }
             }
         }
