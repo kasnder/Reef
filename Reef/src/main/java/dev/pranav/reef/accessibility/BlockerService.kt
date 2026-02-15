@@ -6,6 +6,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.net.Uri
 import android.content.pm.PackageManager
 import android.os.Build
 import android.util.Log
@@ -82,44 +83,23 @@ class BlockerService: AccessibilityService() {
             return
         }
 
-        // Check for website blocking in Firefox
-        if (isFirefoxPackage(pkg)) {
-            Log.d("BlockerService", "[DEBUG] Firefox package detected: $pkg, eventType=${event.eventType}, contentChangeTypes=${event.contentChangeTypes}")
-
+        // Check for website blocking in supported browsers
+        if (isSupportedBrowser(pkg)) {
             // Throttle URL checks to avoid performance issues
             val currentTime = System.currentTimeMillis()
             val shouldCheckUrl = currentTime - lastUrlCheckTime >= URL_CHECK_THROTTLE_MS
 
-            if (!shouldCheckUrl) {
-                Log.d("BlockerService", "[DEBUG] URL check throttled (${currentTime - lastUrlCheckTime}ms since last check)")
-            } else {
+            if (shouldCheckUrl) {
                 lastUrlCheckTime = currentTime
                 val url = extractUrlFromEvent(event)
-                Log.d("BlockerService", "[DEBUG] Extracted URL from event: '$url'")
-                if (url == null) {
-                    Log.d("BlockerService", "[DEBUG] URL extraction returned null - could not find URL bar node or text")
-                } else if (url == lastCheckedUrl) {
-                    Log.d("BlockerService", "[DEBUG] URL unchanged from last check, skipping")
-                } else {
+                if (url != null && url != lastCheckedUrl) {
                     lastCheckedUrl = url
                     val domain = extractDomain(url)
-                    Log.d("BlockerService", "[DEBUG] Extracted domain: '$domain' from URL: '$url'")
-                    if (domain == null) {
-                        Log.d("BlockerService", "[DEBUG] Domain extraction failed for URL: '$url'")
-                    } else {
-                        val isBlocked = Routines.isWebsiteBlocked(domain)
-                        Log.d("BlockerService", "[DEBUG] isWebsiteBlocked('$domain') = $isBlocked")
-                        val sessions = Routines.getActiveSessions()
-                        Log.d("BlockerService", "[DEBUG] Active sessions: ${sessions.size}")
-                        sessions.forEach { session ->
-                            Log.d("BlockerService", "[DEBUG]   Session ${session.routineId}: websiteLimits=${session.websiteLimits}")
-                        }
-                        if (isBlocked) {
-                            Log.d("BlockerService", "Blocking website $domain in Firefox")
-                            performGlobalAction(GLOBAL_ACTION_HOME)
-                            showWebsiteBlockedNotification(domain)
-                            return
-                        }
+                    if (domain != null && Routines.isWebsiteBlocked(domain)) {
+                        Log.d("BlockerService", "Blocking website $domain in browser ($pkg)")
+                        navigateBrowserToBlank(pkg)
+                        showWebsiteBlockedNotification(domain)
+                        return
                     }
                 }
             }
@@ -135,31 +115,59 @@ class BlockerService: AccessibilityService() {
         showBlockedNotification(pkg, blockReason)
     }
 
-    private fun isFirefoxPackage(packageName: String): Boolean {
+    private fun isSupportedBrowser(packageName: String): Boolean {
         return packageName == "org.mozilla.firefox" ||
                packageName == "org.mozilla.firefox_beta" ||
                packageName == "org.mozilla.fenix" ||
                packageName == "org.mozilla.fenix.nightly" ||
-               packageName == "org.mozilla.focus"
+               packageName == "org.mozilla.focus" ||
+               packageName == "com.android.chrome" ||
+               packageName == "com.brave.browser" ||
+               packageName == "com.brave.browser_beta" ||
+               packageName == "com.brave.browser_nightly" ||
+               packageName == "org.chromium.chrome"
+    }
+
+    /**
+     * Navigate the browser to a local blocked page to replace the blocked page in the current tab.
+     * This prevents the user from simply pressing back to return to the blocked site.
+     */
+    /**
+     * Navigate the browser to a local blocked page to replace the blocked page in the current tab.
+     * This prevents the user from simply pressing back to return to the blocked site.
+     */
+    private fun navigateBrowserToBlank(browserPackage: String) {
+        try {
+            // Redirect to reddfocus.org as a "blocked" page.
+            val uri = Uri.parse("https://reddfocus.org")
+            
+            val intent = Intent(Intent.ACTION_VIEW, uri).apply {
+                setPackage(browserPackage)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            startActivity(intent)
+            // Reset cached URL so we re-check if they navigate away again
+            lastCheckedUrl = null
+        } catch (e: Exception) {
+            Log.e("BlockerService", "Failed to navigate browser to blocked page, falling back to home", e)
+            performGlobalAction(GLOBAL_ACTION_HOME)
+        }
     }
 
     private fun extractUrlFromEvent(event: AccessibilityEvent): String? {
         // Use rootInActiveWindow instead of event.source because the URL bar is in the
         // toolbar (a sibling of the WebView), not inside the WebView where content changes fire.
-        val root = rootInActiveWindow
-        if (root == null) {
-            Log.d("BlockerService", "[DEBUG] extractUrlFromEvent: rootInActiveWindow is null")
-            return null
-        }
+        val root = rootInActiveWindow ?: return null
 
         try {
             val pkg = event.packageName?.toString() ?: return null
 
-            // Use efficient direct viewId lookup for known Firefox URL bar IDs
+            // Use efficient direct viewId lookup for known browser URL bar IDs
             val knownUrlViewIds = listOf(
                 "$pkg:id/mozac_browser_toolbar_url_view",
                 "$pkg:id/url_bar_title",
-                "$pkg:id/display_url"
+                "$pkg:id/display_url",
+                "$pkg:id/url_bar" // Common for Chrome/Brave/Chromium
             )
 
             for (viewId in knownUrlViewIds) {
@@ -169,7 +177,6 @@ class BlockerService: AccessibilityService() {
                 for (node in nodes) {
                     try {
                         val text = node.text?.toString()
-                        Log.d("BlockerService", "[DEBUG] extractUrlFromEvent: found node viewId='$viewId', text='$text'")
                         if (text != null && isValidUrlFormat(text)) {
                             return text
                         }
@@ -178,8 +185,6 @@ class BlockerService: AccessibilityService() {
                     }
                 }
             }
-
-            Log.d("BlockerService", "[DEBUG] extractUrlFromEvent: no URL node found via direct viewId lookup")
         } catch (e: Exception) {
             Log.e("BlockerService", "Error extracting URL", e)
         } finally {

@@ -61,13 +61,13 @@
     <string name="app_limits">App Limits</string>
     <string name="add_app">Add App</string>
     <string name="no_app_limits_desc">No app limits added yet\nTap \'Add App\' to set limits for specific apps</string>
-    <string name="website_limits">Website Limits (Firefox)</string>
+    <string name="website_limits">Website Limits</string>
     <string name="add_website">Add Website</string>
-    <string name="no_website_limits_desc">No website limits added yet\nTap \'Add Website\' to block specific websites in Firefox</string>
-    <string name="blocked_in_firefox">Blocked in Firefox</string>
+    <string name="no_website_limits_desc">No website limits added yet\nTap \'Add Website\' to block specific websites</string>
+    <string name="blocked_in_firefox">Blocked in browser</string>
     <string name="remove_website_limit">Remove website limit</string>
     <string name="add_website_to_block">Add Website to Block</string>
-    <string name="website_block_description">Enter a website domain to block in Firefox. The website will be blocked when this routine is active.</string>
+    <string name="website_block_description">Enter a website domain to block. The website will be blocked when this routine is active.</string>
     <string name="website_domain">Website domain</string>
     <string name="invalid_domain">Please enter a valid domain (e.g., example.com)</string>
     <string name="add">Add</string>
