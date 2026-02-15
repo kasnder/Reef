@@ -51,8 +51,6 @@ android {
     }
     buildToolsVersion = "36.1.0"
     ndkVersion = "29.0.14033849 rc4"
-    compileSdkMinor = 1
-
 }
 
 dependencies {
