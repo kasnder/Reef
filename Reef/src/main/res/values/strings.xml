@@ -61,6 +61,16 @@
     <string name="app_limits">App Limits</string>
     <string name="add_app">Add App</string>
     <string name="no_app_limits_desc">No app limits added yet\nTap \'Add App\' to set limits for specific apps</string>
+    <string name="website_limits">Website Limits (Firefox)</string>
+    <string name="add_website">Add Website</string>
+    <string name="no_website_limits_desc">No website limits added yet\nTap \'Add Website\' to block specific websites in Firefox</string>
+    <string name="blocked_in_firefox">Blocked in Firefox</string>
+    <string name="remove_website_limit">Remove website limit</string>
+    <string name="add_website_to_block">Add Website to Block</string>
+    <string name="website_block_description">Enter a website domain to block in Firefox. The website will be blocked when this routine is active.</string>
+    <string name="website_domain">Website domain</string>
+    <string name="invalid_domain">Please enter a valid domain (e.g., example.com)</string>
+    <string name="add">Add</string>
     <string name="save_routine">Save Routine</string>
     <string name="delete_routine">Delete Routine</string>
     <string name="routine_card_title">Automate Your Digital Wellness</string>
@@ -287,6 +297,8 @@
     <string name="reached_limit">%1$s has reached its limit</string>
     <string name="distraction_blocked">Distraction Blocked</string>
     <string name="you_were_using">You were using %1$s</string>
+    <string name="website_blocked">Website blocked</string>
+    <string name="website_blocked_by_routine">%1$s is blocked by your active routine</string>
 
     <!-- Notification Helper strings -->
     <string name="blocker_channel_name">Content Blocker</string>

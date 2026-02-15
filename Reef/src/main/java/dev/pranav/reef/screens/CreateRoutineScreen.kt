@@ -17,6 +17,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.outlined.AccessTime
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -63,9 +64,11 @@ fun CreateRoutineScreen(
     var selectedEndTime by remember { mutableStateOf(LocalTime.of(17, 0)) }
     var selectedDays by remember { mutableStateOf(setOf<DayOfWeek>()) }
     var appLimits by remember { mutableStateOf(listOf<Routine.AppLimit>()) }
+    var websiteLimits by remember { mutableStateOf(listOf<Routine.WebsiteLimit>()) }
     var showTimePicker by remember { mutableStateOf(false) }
     var showEndTimePicker by remember { mutableStateOf(false) }
     var showAppSelector by remember { mutableStateOf(false) }
+    var showWebsiteDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(routineId) {
@@ -78,6 +81,7 @@ fun CreateRoutineScreen(
                 routine.schedule.endTime?.let { selectedEndTime = it }
                 selectedDays = routine.schedule.daysOfWeek
                 appLimits = routine.limits
+                websiteLimits = routine.websiteLimits
             }
         }
     }
@@ -321,6 +325,59 @@ fun CreateRoutineScreen(
                 }
             }
 
+            // Website Limits Section
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = stringResource(R.string.website_limits),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                FilledTonalButton(
+                    onClick = { showWebsiteDialog = true },
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Add,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(stringResource(R.string.add_website))
+                }
+            }
+
+            if (websiteLimits.isEmpty()) {
+                OutlinedCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(20.dp)
+                ) {
+                    Text(
+                        text = stringResource(R.string.no_website_limits_desc),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(32.dp)
+                    )
+                }
+            } else {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    websiteLimits.forEach { limit ->
+                        WebsiteLimitItem(
+                            websiteLimit = limit,
+                            onRemove = {
+                                websiteLimits = websiteLimits.filter { it.domain != limit.domain }
+                            }
+                        )
+                    }
+                }
+            }
+
             Spacer(modifier = Modifier.height(16.dp))
 
             Button(
@@ -334,6 +391,7 @@ fun CreateRoutineScreen(
                         selectedEndTime = selectedEndTime,
                         selectedDays = selectedDays,
                         appLimits = appLimits,
+                        websiteLimits = websiteLimits,
                         onError = { message ->
                             scope.launch {
                                 snackbarHostState.showSnackbar(message)
@@ -403,6 +461,17 @@ fun CreateRoutineScreen(
                 showAppSelector = false
             },
             onDismiss = { showAppSelector = false }
+        )
+    }
+
+    if (showWebsiteDialog) {
+        WebsiteInputDialog(
+            onWebsiteAdded = { domain ->
+                websiteLimits = websiteLimits.filter { it.domain != domain } +
+                        Routine.WebsiteLimit(domain, 0)
+                showWebsiteDialog = false
+            },
+            onDismiss = { showWebsiteDialog = false }
         )
     }
 
@@ -508,6 +577,153 @@ private fun AppLimitItem(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun WebsiteLimitItem(
+    websiteLimit: Routine.WebsiteLimit,
+    onRemove: () -> Unit
+) {
+    OutlinedCard(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Surface(
+                modifier = Modifier.size(48.dp),
+                shape = RoundedCornerShape(12.dp),
+                tonalElevation = 1.dp,
+                color = MaterialTheme.colorScheme.primaryContainer
+            ) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Language,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
+            }
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = websiteLimit.domain,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = stringResource(R.string.blocked_in_firefox),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            IconButton(
+                onClick = onRemove,
+                modifier = Modifier.size(40.dp)
+            ) {
+                Icon(
+                    Icons.Default.Close,
+                    contentDescription = stringResource(R.string.remove_website_limit),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun WebsiteInputDialog(
+    onWebsiteAdded: (domain: String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var websiteInput by remember { mutableStateOf("") }
+    var isError by remember { mutableStateOf(false) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.add_website_to_block)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = stringResource(R.string.website_block_description),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                OutlinedTextField(
+                    value = websiteInput,
+                    onValueChange = {
+                        websiteInput = it
+                        isError = false
+                    },
+                    label = { Text(stringResource(R.string.website_domain)) },
+                    placeholder = { Text("example.com") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    isError = isError,
+                    supportingText = if (isError) {
+                        { Text(stringResource(R.string.invalid_domain)) }
+                    } else null,
+                    shape = RoundedCornerShape(12.dp),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Uri,
+                        imeAction = ImeAction.Done
+                    )
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    val domain = extractDomainFromInput(websiteInput)
+                    if (domain != null) {
+                        onWebsiteAdded(domain)
+                    } else {
+                        isError = true
+                    }
+                }
+            ) {
+                Text(stringResource(R.string.add))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.cancel))
+            }
+        }
+    )
+}
+
+private fun extractDomainFromInput(input: String): String? {
+    val trimmed = input.trim().lowercase()
+    if (trimmed.isBlank()) return null
+
+    return try {
+        var normalizedUrl = trimmed
+        // Add protocol if missing for proper URL parsing
+        if (!normalizedUrl.startsWith("http://") && !normalizedUrl.startsWith("https://")) {
+            normalizedUrl = "https://$normalizedUrl"
+        }
+        val uri = java.net.URI(normalizedUrl)
+        val host = uri.host ?: return null
+        // Validation: must contain at least one dot and have a valid TLD (min 2 characters)
+        val parts = host.split(".")
+        if (parts.size < 2 || parts.last().length < 2) return null
+        // Check that all parts are non-empty and contain valid characters
+        if (parts.any { it.isBlank() || !it.matches(Regex("[a-zA-Z0-9-]+")) }) return null
+        host.removePrefix("www.")
+    } catch (e: Exception) {
+        null
     }
 }
 
@@ -718,6 +934,7 @@ private fun saveRoutine(
     selectedEndTime: LocalTime,
     selectedDays: Set<DayOfWeek>,
     appLimits: List<Routine.AppLimit>,
+    websiteLimits: List<Routine.WebsiteLimit>,
     onError: (String) -> Unit
 ): Boolean {
     if (name.trim().isEmpty()) {
@@ -744,7 +961,8 @@ private fun saveRoutine(
         name = name.trim(),
         isEnabled = currentRoutine?.isEnabled ?: true,
         schedule = schedule,
-        limits = appLimits
+        limits = appLimits,
+        websiteLimits = websiteLimits
     )
 
     Routines.save(routine, context)
